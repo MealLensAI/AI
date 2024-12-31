@@ -1,70 +1,85 @@
 from googleapiclient.discovery import build
 
 
-def get_google_search_results(search_query, max_results=5):
-    """
-    Get top Google search results based on a search query.
+class GoogleSearch:
+    def __init__(self, api_key, cx, max_results=5):
+        """
+        Initialize GoogleSearch instance with API key, Custom Search Engine ID, and max results.
 
-    Args:
-        search_query (str): The search term to find results for
-        max_results (int): Maximum number of search results to return
+        Args:
+            api_key (str): The API key to access Google Custom Search API
+            cx (str): The Custom Search Engine ID
+            max_results (int): Maximum number of results to return
+        """
+        self.api_key = api_key
+        self.cx = cx
+        self.max_results = max_results
 
-    Returns:
-        list: List of dictionaries containing result titles and links
-    """
-    try:
-        # Replace with your own Google API key and Custom Search Engine ID
-        API_KEY = 'AIzaSyDHvkvp4jGmkIHntqrZ2HQGWC3HGqGtt_4'
+    def get_search_results(self, search_query):
+        """
+        Get top Google search results based on a search query.
 
-        CX = '13a96d83a84c64f2d'
+        Args:
+            search_query (str): The search term to find results for
 
-        # Create the Custom Search API client
-        service = build('customsearch', 'v1', developerKey=API_KEY)
+        Returns:
+            list: List of dictionaries containing result titles and links
+        """
+        try:
+            # Create the Custom Search API client
+            service = build('customsearch', 'v1', developerKey=self.api_key)
 
-        # Execute the search
-        search_response = service.cse().list(
-            q=search_query,
-            cx=CX,
-            num=max_results,
+            # Execute the search
+            search_response = service.cse().list(
+                q=search_query,
+                cx=self.cx,
+                num=self.max_results,
+                filter='0',  # Filter out duplicate results
+                safe='high',
+            ).execute()
 
-            # sort='date',  # Sort results by date (optional, you can remove if not needed)
-            filter='0',  # Filter out duplicate results
-            safe='high',
-        ).execute()
+            # Process the results
+            results = []
+            for item in search_response.get('items', []):
+                title = item.get('title', 'No Title')
+                link = item.get('link', 'No Link')
+                snippet = item.get('snippet', 'No Description')
+                results.append({
+                    'title': title,
+                    'link': link,
+                    'description': snippet
+                })
 
-        # Process the results
-        results = []
-        for item in search_response.get('items', []):
-            title = item.get('title', 'No Title')
-            link = item.get('link', 'No Link')
-            snippet = item.get('snippet', 'No Description')
-            results.append({
-                'title': title,
-                'link': link,
-                'description': snippet
-            })
+            return results
 
-        return results
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
+            return []
 
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
-        return []
+    def main(self):
+        """
+        Main method to handle user input and output Google search results.
+        """
+        search_term = input("Enter what you want to search for: ")
+        results = self.get_search_results(search_term)
 
-
-# Example usage
-def main():
-    search_term = input("Enter what you want to search for: ")
-    results = get_google_search_results(search_term)
-
-    if results:
-        print("\nHere are your Google search results:")
-        for i, result in enumerate(results, 1):
-            print(f"\n{i}. {result['title']}")
-            print(f"   Link: {result['link']}")
-            print(f"   Description: {result['description']}")
-    else:
-        print("No results found or an error occurred.")
+        if results:
+            print("\nHere are your Google search results:")
+            for i, result in enumerate(results, 1):
+                print(f"\n{i}. {result['title']}")
+                print(f"   Link: {result['link']}")
+                print(f"   Description: {result['description']}")
+        else:
+            print("No results found or an error occurred.")
 
 
 if __name__ == "__main__":
-    main()
+    # Replace with your own API key and Custom Search Engine ID
+    api_key = 'AIzaSyDHvkvp4jGmkIHntqrZ2HQGWC3HGqGtt_4'
+    cx = '13a96d83a84c64f2d'
+
+    # Create GoogleSearch instance
+    google_search = GoogleSearch(api_key, cx)
+
+    # Run the main method of the GoogleSearch class
+    google_search.main()
