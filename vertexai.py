@@ -44,7 +44,5 @@ response = client.chat.completions.create(
     }
   ],
 )
-
-print(response.choices[0])
-
-# response.choices[0].message["content"]
+# Print just the main message content
+print(response.choices[0].message.content)

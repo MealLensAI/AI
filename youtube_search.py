@@ -23,6 +23,7 @@ class YouTubeSearch:
         Returns:
             list: List of dictionaries containing video titles and links
         """
+
         try:
             # Create YouTube API client
             youtube = build('youtube', 'v3', developerKey=self.api_key)
