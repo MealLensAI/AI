@@ -54,20 +54,22 @@ class YouTubeSearch:
             print(f"An error occurred: {str(e)}")
             return []
 
-    def main(self):
+    def main(self,food):
         """
         Main method to handle user input and output YouTube search results.
         """
-        search_term = input("Enter what you want to search for: ")
-        results = self.get_video_links(search_term)
+
+        results = self.get_video_links(food)
 
         if results:
-            print("\nHere are your video links:")
-            for i, video in enumerate(results, 1):
-                print(f"\n{i}. {video['title']}")
-                print(f"   Link: {video['link']}")
+            return results
+            # print("\nHere are your video links:")
+            # for i, video in enumerate(results, 1):
+            #     print(f"\n{i}. {video['title']}")
+            #     print(f"   Link: {video['link']}")
         else:
-            print("No videos found or an error occurred.")
+            # print("No videos found or an error occurred.")
+            return []
 
 
 if __name__ == "__main__":

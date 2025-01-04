@@ -1,0 +1,118 @@
+from typing import Tuple
+from flask import Flask, request, jsonify
+
+import google_search
+from AI.google_search import GoogleSearch
+from ingredient import OpenAIClient, IngredientAnalyzer
+import os
+import tempfile
+import json
+import uuid
+import youtube_search
+
+app = Flask(__name__)
+
+# Initialize the OpenAI client
+api_key = "AIzaSyCMV1RzXC62lSyDxqcqlky-p1UzHqH2XEw"
+base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+client = OpenAIClient(api_key, base_url)
+analyzer = IngredientAnalyzer(client)
+
+# Directory to store JSON files
+storage_dir = 'analysis_data'
+os.makedirs(storage_dir, exist_ok=True)
+
+def save_analysis_to_file(analysis_id, data):
+    file_path = os.path.join(storage_dir, f"{analysis_id}.json")
+    with open(file_path, 'w') as f:
+        json.dump(data, f)
+
+def load_analysis_from_file(analysis_id):
+    file_path = os.path.join(storage_dir, f"{analysis_id}.json")
+    if not os.path.exists(file_path):
+        return None
+    with open(file_path, 'r') as f:
+        return json.load(f)
+
+@app.route('/process', methods=['POST'])
+def process():
+    # Step 1: Check for image or ingredient list
+    if 'image_or_ingredient_list' not in request.form:
+        return jsonify({"error": "Parameter 'image or ingredient_list' is required"}), 400
+
+    image_or_text = request.form.get('image_or_ingredient_list')
+    if image_or_text == 'image':
+        # Handle image processing
+        if 'image' not in request.files:
+            return jsonify({"error": "Image file is required"}), 400
+
+        image_file = request.files['image']
+        if image_file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            image_file.save(temp_file.name)
+            temp_file_path = temp_file.name
+
+        result = analyzer.auto_detect(temp_file_path)
+        os.remove(temp_file_path)
+
+    elif image_or_text == 'ingredient_list':
+        # Handle ingredient list processing
+        if 'ingredient_list' not in request.form:
+            return jsonify({"error": "ingredient_list input is required"}), 400
+
+        text_input = request.form.get('ingredient_list')
+        result = analyzer.manual_prompt(text_input)
+
+    else:
+        return jsonify({"error": "Invalid 'image_or_ingredient_list' value. Must be 'image' or 'text'"}), 400
+
+    # Generate a unique ID and store the result in a JSON file
+    analysis_id = str(uuid.uuid4())
+    save_analysis_to_file(analysis_id, result)
+
+    # Step 2: Get food suggestions
+    food_suggestions = analyzer.get_food_suggestions(result)
+
+
+    # Step 3: Return food suggestions and wait for user choice
+    return jsonify({"analysis_id": analysis_id, "response": result, "food_suggestions": food_suggestions})
+
+@app.route('/instructions', methods=['POST'])
+def instructions():
+    # Step 4: Get user choice and generate instructions
+    user_choice = request.form.get('food_choice_index')
+    chat_id = request.form.get('food_analysis_id')
+    json_file_name = f"{chat_id}.json"
+
+    initial_prompt = load_analysis_from_file(chat_id)
+
+    print(json_file_name,user_choice)
+    print(initial_prompt)
+
+    if not initial_prompt or not user_choice:
+        return jsonify({"error": "Food suggestions and user choice are required"}), 400
+
+    instructions = analyzer.get_cooking_instructions_and_ingredients(initial_prompt, user_choice)
+
+    user_choice = f"How to make {user_choice}"
+    youtube_api_key = 'AIzaSyCgbgyVCdZy4oBTw8UvL3_UmD6tVi0ovyw'
+    google_search_api_key = 'AIzaSyDHvkvp4jGmkIHntqrZ2HQGWC3HGqGtt_4'
+    cx = '13a96d83a84c64f2d'
+
+    YT = youtube_search.YouTubeSearch(youtube_api_key)
+    GS = google_search.GoogleSearch(google_search_api_key, cx)
+
+    YT = YT.main(user_choice)
+    GS = GS.main(user_choice)
+
+    os.remove(f"analysis_data/{json_file_name}")
+
+    return jsonify({"instructions": instructions, "Youtube Search": YT,"GoogleSearch": GS})
+
+
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=7017, debug=True)

@@ -56,21 +56,24 @@ class GoogleSearch:
             print(f"An error occurred: {str(e)}")
             return []
 
-    def main(self):
+    def main(self,food):
         """
         Main method to handle user input and output Google search results.
         """
-        search_term = input("Enter what you want to search for: ")
-        results = self.get_search_results(search_term)
+
+        results = self.get_search_results(food)
 
         if results:
-            print("\nHere are your Google search results:")
-            for i, result in enumerate(results, 1):
-                print(f"\n{i}. {result['title']}")
-                print(f"   Link: {result['link']}")
-                print(f"   Description: {result['description']}")
+
+            return results
+            # print("\nHere are your Google search results:")
+            # for i, result in enumerate(results, 1):
+            #     print(f"\n{i}. {result['title']}")
+            #     print(f"   Link: {result['link']}")
+            #     print(f"   Description: {result['description']}")
         else:
-            print("No results found or an error occurred.")
+            return  []
+            # print("No results found or an error occurred.")
 
 
 if __name__ == "__main__":
@@ -82,4 +85,6 @@ if __name__ == "__main__":
     google_search = GoogleSearch(api_key, cx)
 
     # Run the main method of the GoogleSearch class
-    google_search.main()
+    print(google_search.main("rice"))
+
+
