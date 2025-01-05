@@ -13,7 +13,7 @@ class YouTubeSearch:
         self.api_key = api_key
         self.max_results = max_results
 
-    def get_video_links(self, search_query):
+    def get_video_links(self, search_query,max_results = 5):
         """
         Get YouTube video links based on a search query.
 
@@ -32,7 +32,7 @@ class YouTubeSearch:
             search_response = youtube.search().list(
                 q=search_query,
                 part='id,snippet',
-                maxResults=self.max_results,
+                maxResults=max_results,
                 type='video'
             ).execute()
 
@@ -54,12 +54,12 @@ class YouTubeSearch:
             print(f"An error occurred: {str(e)}")
             return []
 
-    def main(self,food):
+    def main(self,food,max_results = 5):
         """
         Main method to handle user input and output YouTube search results.
         """
 
-        results = self.get_video_links(food)
+        results = self.get_video_links(food,max_results)
 
         if results:
             return results

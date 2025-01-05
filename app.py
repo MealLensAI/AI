@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify
 
 import google_search
 from AI.google_search import GoogleSearch
-from ingredient import OpenAIClient, IngredientAnalyzer
+from ingredient import OpenAIClient, IngredientAnalyzer,Food_Analyzer
 import os
 import tempfile
 import json
@@ -15,8 +15,12 @@ app = Flask(__name__)
 # Initialize the OpenAI client
 api_key = "AIzaSyCMV1RzXC62lSyDxqcqlky-p1UzHqH2XEw"
 base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+youtube_api_key = 'AIzaSyCgbgyVCdZy4oBTw8UvL3_UmD6tVi0ovyw'
+google_search_api_key = 'AIzaSyDHvkvp4jGmkIHntqrZ2HQGWC3HGqGtt_4'
+cx = '13a96d83a84c64f2d'
 client = OpenAIClient(api_key, base_url)
 analyzer = IngredientAnalyzer(client)
+food_analyzer = Food_Analyzer(client)
 
 # Directory to store JSON files
 storage_dir = 'analysis_data'
@@ -79,6 +83,9 @@ def process():
     # Step 3: Return food suggestions and wait for user choice
     return jsonify({"analysis_id": analysis_id, "response": result, "food_suggestions": food_suggestions})
 
+
+
+
 @app.route('/instructions', methods=['POST'])
 def instructions():
     # Step 4: Get user choice and generate instructions
@@ -97,9 +104,7 @@ def instructions():
     instructions = analyzer.get_cooking_instructions_and_ingredients(initial_prompt, user_choice)
 
     user_choice = f"How to make {user_choice}"
-    youtube_api_key = 'AIzaSyCgbgyVCdZy4oBTw8UvL3_UmD6tVi0ovyw'
-    google_search_api_key = 'AIzaSyDHvkvp4jGmkIHntqrZ2HQGWC3HGqGtt_4'
-    cx = '13a96d83a84c64f2d'
+
 
     YT = youtube_search.YouTubeSearch(youtube_api_key)
     GS = google_search.GoogleSearch(google_search_api_key, cx)
@@ -112,6 +117,37 @@ def instructions():
     return jsonify({"instructions": instructions, "Youtube Search": YT,"GoogleSearch": GS})
 
 
+@app.route('/food_detect', methods=['POST'])
+def food_detect():
+
+        if 'image' not in request.files:
+            return jsonify({"error": "Image file is required"}), 400
+
+        image_file = request.files['image']
+
+        if image_file.filename == '':
+            return jsonify({"error": "No selected file"}), 400
+
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            image_file.save(temp_file.name)
+            temp_file_path = temp_file.name
+
+        result = food_analyzer.get_food_suggestions(temp_file_path)
+        food_detected = result[1]
+        # print(food_detected)
+        YT_result = []
+        GS_result = []
+        for i in food_detected:
+
+            YT = youtube_search.YouTubeSearch(youtube_api_key)
+            GS = google_search.GoogleSearch(google_search_api_key, cx)
+            YT = YT.main(i,1)
+            GS = GS.main(i,1)
+            YT_result.append(YT)
+            GS_result.append(GS)
+
+
+        return jsonify({"instructions": result[0], "Youtube Search": YT_result, "GoogleSearch": GS_result})
 
 
 if __name__ == '__main__':

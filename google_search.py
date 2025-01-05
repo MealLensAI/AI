@@ -15,7 +15,7 @@ class GoogleSearch:
         self.cx = cx
         self.max_results = max_results
 
-    def get_search_results(self, search_query):
+    def get_search_results(self, search_query,max_results=5):
         """
         Get top Google search results based on a search query.
 
@@ -33,7 +33,7 @@ class GoogleSearch:
             search_response = service.cse().list(
                 q=search_query,
                 cx=self.cx,
-                num=self.max_results,
+                num=max_results,
                 filter='0',  # Filter out duplicate results
                 safe='high',
             ).execute()
@@ -56,12 +56,12 @@ class GoogleSearch:
             print(f"An error occurred: {str(e)}")
             return []
 
-    def main(self,food):
+    def main(self,food,max_results=5):
         """
         Main method to handle user input and output Google search results.
         """
 
-        results = self.get_search_results(food)
+        results = self.get_search_results(food,max_results)
 
         if results:
 

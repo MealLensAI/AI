@@ -53,6 +53,7 @@ class IngredientAnalyzer:
         return response.choices[0].message.content
 
     def get_food_suggestions(self, initial_prompt_result):
+
         prompt = (f"Extract just the food suggestions from this and return them as a list separated by commas if there is 'or' separate the different food and make them different : "
                   f"{initial_prompt_result}.")
         response = self.client.create_completion(
@@ -84,6 +85,57 @@ class IngredientAnalyzer:
         )
         return response.choices[0].message.content
 
+# Check for the food and identify it
+
+
+class Food_Analyzer:
+    def __init__(self, client):
+        self.client = client
+
+    def food_detect(self, image_path):
+        base64_image = ImageProcessor.encode_image(image_path)
+        prompt = ("You are given an image of food . Tell me what food you are seeing,"
+                  "list the ingredient that is used to make it."
+                    f"Based on the ingredient analysis,, generate step-by-step instructions to make the food. "
+
+
+                  )
+        response = self.client.create_completion(
+            model="gemini-1.5-flash",
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
+                    ],
+                }
+            ],
+        )
+        return response.choices[0].message.content
+
+    def get_food_suggestions(self, image):
+
+        initial_prompt_result = self.food_detect(image)
+        prompt = (f"Extract just the name of the food being seen from this and return it to me and return it as a list separated by commas"
+                  # f",if there is 'or' separate the different food and make them different "
+                  f"{initial_prompt_result}.")
+        response = self.client.create_completion(
+            model="gemini-1.5-flash",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        return initial_prompt_result,response.choices[0].message.content.split(", ")
+
+
+
+
+
 class InteractiveSession:
     def __init__(self, client):
         self.analyzer = IngredientAnalyzer(client)
@@ -110,15 +162,25 @@ if __name__ == '__main__':
     api_key = "AIzaSyCMV1RzXC62lSyDxqcqlky-p1UzHqH2XEw"
     base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
     client = OpenAIClient(api_key, base_url)
-    session = InteractiveSession(client)
+    # session = InteractiveSession(client)
+    session1 = Food_Analyzer(client)
 
-    auto_mode = True  # Set this to True or False based on your requirement
-    ingredients_input = None
+    # result = session1.food_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img_6.png')
+    # print(result)
 
-    if not auto_mode:
-        ingredients_input = input("Enter ingredients separated by commas: ")
+    food_detected = session1.get_food_suggestions('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img_6.png')
+    print(food_detected)
 
-    session.run(auto_mode, ingredients_input)
+
+
+
+    # auto_mode = True  # Set this to True or False based on your requirement
+    # ingredients_input = None
+    #
+    # if not auto_mode:
+    #     ingredients_input = input("Enter ingredients separated by commas: ")
+    #
+    # session.run(auto_mode, ingredients_input)
 
 
 
