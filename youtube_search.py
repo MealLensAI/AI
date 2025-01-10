@@ -74,10 +74,10 @@ class YouTubeSearch:
 
 if __name__ == "__main__":
     # Replace with your own API key
-    api_key = 'AIzaSyCgbgyVCdZy4oBTw8UvL3_UmD6tVi0ovyw'
+    youtube_api_key = 'youtube_api_key'
 
     # Create YouTubeSearch instance
-    youtube_search = YouTubeSearch(api_key)
+    youtube_search = YouTubeSearch(youtube_api_key)
 
     # Run the main method of the YouTubeSearch class
-    youtube_search.main()
+    youtube_search.main("math")

@@ -78,13 +78,13 @@ class GoogleSearch:
 
 if __name__ == "__main__":
     # Replace with your own API key and Custom Search Engine ID
-    api_key = 'AIzaSyDHvkvp4jGmkIHntqrZ2HQGWC3HGqGtt_4'
+    google_search_api_key = 'google_search_api_key'
     cx = '13a96d83a84c64f2d'
 
     # Create GoogleSearch instance
-    google_search = GoogleSearch(api_key, cx)
+    google_search = GoogleSearch(google_search_api_key, cx)
 
     # Run the main method of the GoogleSearch class
-    print(google_search.main("rice"))
+    print(google_search.main("math"))
 
 
