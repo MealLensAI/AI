@@ -9,9 +9,10 @@ import tempfile
 import json
 import uuid
 import youtube_search
+from flask_cors import CORS
 
 app = Flask(__name__)
-
+CORS(app)
 # Initialize the OpenAI client
 api_key = "AIzaSyCMV1RzXC62lSyDxqcqlky-p1UzHqH2XEw"
 base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
