@@ -115,7 +115,7 @@ def instructions():
 
     os.remove(f"analysis_data/{json_file_name}")
 
-    return jsonify({"instructions": instructions, "Youtube Search": YT,"GoogleSearch": GS})
+    return jsonify({"instructions": instructions, "YoutubeSearch": YT,"GoogleSearch": GS})
 
 
 @app.route('/food_detect', methods=['POST'])
