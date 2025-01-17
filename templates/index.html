@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Call Example</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .suggestion-button {
+            margin: 5px;
+            padding: 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .suggestion-button:hover {
+            background-color: #2980b9;
+        }
+        .link {
+            margin-top: 10px;
+            display: block;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Image or Enter Ingredients</h1>
+    <select id="inputType">
+        <option value="image">Image</option>
+        <option value="ingredient_list">Ingredient List</option>
+    </select>
+    
+    <div id="imageInput" class="input-section">
+        <input type="file" id="fileInput" accept="image/*">
+    </div>
+    
+    <div id="ingredientInput" class="input-section hidden">
+        <input type="text" id="ingredientTextInput" placeholder="Enter ingredients (comma-separated)">
+    </div>
+    
+    <button onclick="uploadData()">Submit</button>
+    <div id="loading" class="loading"></div>
+    <div id="results"></div>
+
+    <script>
+        let analysisId = ''; // Variable to store the analysis ID
+
+        document.getElementById('inputType').addEventListener('change', function() {
+            const selectedValue = this.value;
+            document.getElementById('imageInput').classList.toggle('hidden', selectedValue !== 'image');
+            document.getElementById('ingredientInput').classList.toggle('hidden', selectedValue !== 'ingredient_list');
+        });
+
+        function uploadData() {
+            const inputType = document.getElementById('inputType').value;
+            const loading = document.getElementById('loading');
+            const resultsDiv = document.getElementById('results');
+            const formData = new FormData();
+
+            loading.style.display = 'block';
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            if (inputType === 'image') {
+                const fileInput = document.getElementById('fileInput');
+                if (!fileInput.files.length) {
+                    alert('Please select an image file.');
+                    loading.style.display = 'none';
+                    return;
+                }
+                formData.append('image_or_ingredient_list', 'image');
+                formData.append('image', fileInput.files[0]);
+            } else if (inputType === 'ingredient_list') {
+                const ingredientInput = document.getElementById('ingredientTextInput');
+                const ingredients = ingredientInput.value.trim();
+                if (!ingredients) {
+                    alert('Please enter ingredients.');
+                    loading.style.display = 'none';
+                    return;
+                }
+                formData.append('image_or_ingredient_list', 'ingredient_list');
+                formData.append('ingredient_list', ingredients);
+            }
+
+            fetch('https://ai-utu2.onrender.com/process', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none';
+
+                if (data.error) {
+                    resultsDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                } else {
+                    analysisId = data.analysis_id; // Store the analysis ID
+                    resultsDiv.innerHTML = `
+                        <h3>Analysis Result</h3>
+                        <p>${data.response}</p>
+                        <h4>Food Suggestions:</h4>
+                        <div id="suggestions"></div>
+                        <p>Analysis ID: ${data.analysis_id}</p>
+                    `;
+                    const suggestionsDiv = document.getElementById('suggestions');
+                    data.food_suggestions.forEach(suggestion => {
+                        const button = document.createElement('button');
+                        button.textContent = suggestion;
+                        button.className = 'suggestion-button';
+                        button.onclick = () => handleSuggestionClick(suggestion);
+                        suggestionsDiv.appendChild(button);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loading.style.display = 'none'; // Hide loading spinner on error
+            });
+        }
+
+        function handleSuggestionClick(suggestion) {
+            console.log('Selected suggestion:', suggestion);
+            fetchInstructions(analysisId, suggestion); // Call the new function to fetch instructions
+        }
+
+        function fetchInstructions(analysisId, suggestion) {
+            const loading = document.getElementById('loading');
+            const resultsDiv = document.getElementById('results');
+
+            loading.style.display = 'block'; // Show loading spinner
+
+            const formData = new FormData();
+            formData.append('food_analysis_id', analysisId);
+            formData.append('food_choice_index', suggestion);
+
+            fetch('https://ai-utu2.onrender.com/instructions', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none'; // Hide loading spinner
+
+                // Log the entire response for debugging
+                console.log('API Response:', data);
+
+                // Display the results
+                resultsDiv.innerHTML += `
+                    <h4>Instructions:</h4>
+                    <p>${data.instructions}</p>
+                    <h4>Google Links:</h4>
+                    ${data.GoogleSearch && data.GoogleSearch.length > 0 ? 
+                        data.GoogleSearch.map(item => `
+                            <a class="link" href="${item.link}" target="_blank">${item.title}</a>
+                            <p>${item.description}</p>
+                        `).join('') : 
+                        '<p>No Google links available.</p>'}
+                    <h4>YouTube Links:</h4>
+                    
+                    ${data.YoutubeSearch && data.YoutubeSearch.length > 0 ? 
+                       
+                        data.YoutubeSearch.map(item => `
+
+                        
+                            <a class="link" href="${item.link}" target="_blank">${item.title}</a>
+                        `).join('') : 
+                        '<p>No YouTube links available.</p>'}
+                `;
+            })
+            .catch(error => {
+                console.error('Error fetching instructions:', error);
+                loading.style.display = 'none'; // Hide loading spinner on error
+            });
+        }
+    </script>
+</body>
+</html>
