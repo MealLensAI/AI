@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .hidden {
+            display: none;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .link {
+            margin-top: 10px;
+            display: block;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <h1>Upload Image for Food Detection</h1>
+    <div id="imageInput" class="input-section">
+        <input type="file" id="fileInput" accept="image/*">
+    </div>
+    
+    <button onclick="uploadImage()">Submit</button>
+    <div id="loading" class="loading"></div>
+    <div id="results"></div>
+
+    <script>
+        function uploadImage() {
+            const loading = document.getElementById('loading');
+            const resultsDiv = document.getElementById('results');
+            const formData = new FormData();
+            const fileInput = document.getElementById('fileInput');
+
+            loading.style.display = 'block';
+            resultsDiv.innerHTML = ''; // Clear previous results
+
+            if (!fileInput.files.length) {
+                alert('Please select an image file.');
+                loading.style.display = 'none';
+                return;
+            }
+
+            formData.append('image', fileInput.files[0]);
+
+            fetch('https://ai-utu2.onrender.com/food_detect', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                loading.style.display = 'none'; // Hide loading spinner
+
+                // Log the entire response for debugging
+                console.log('API Response:', data);
+
+                // Display the results
+                resultsDiv.innerHTML += `
+                    <h4>Instructions:</h4>
+                    <p>${data.instructions}</p>
+                    <h4>Google Links:</h4>
+                    ${data.GoogleSearch && data.GoogleSearch.length > 0 ? 
+                        data.GoogleSearch.map(item => `
+                            <a class="link" href="${item.link}" target="_blank">${item.title}</a>
+                            <p>${item.description}</p>
+                        `).join('') : 
+                        '<p>No Google links available.</p>'}
+                    <h4>YouTube Links:</h4>
+                    
+                    ${data.YoutubeSearch && data.YoutubeSearch.length > 0 ? 
+                       
+                        data.YoutubeSearch.map(item => `
+
+                        
+                            <a class="link" href="${item.link}" target="_blank">${item.title}</a>
+                        `).join('') : 
+                        '<p>No YouTube links available.</p>'}
+                `;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                loading.style.display = 'none'; // Hide loading spinner on error
+            });
+        }
+    </script>
+</body>
+</html>

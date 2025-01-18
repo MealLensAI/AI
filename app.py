@@ -148,7 +148,7 @@ def food_detect():
             GS_result.append(GS)
 
 
-        return jsonify({"instructions": result[0], "Youtube Search": YT_result, "GoogleSearch": GS_result})
+        return jsonify({"instructions": result[0], "YoutubeSearch": YT_result, "GoogleSearch": GS_result})
 
 
 if __name__ == '__main__':
