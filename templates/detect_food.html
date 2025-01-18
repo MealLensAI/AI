@@ -67,33 +67,33 @@
             })
             .then(response => response.json())
             .then(data => {
-                loading.style.display = 'none'; // Hide loading spinner
+                loading.style.display = 'none';
 
-                // Log the entire response for debugging
-                console.log('API Response:', data);
-
-                // Display the results
-                resultsDiv.innerHTML += `
-                    <h4>Instructions:</h4>
-                    <p>${data.instructions}</p>
-                    <h4>Google Links:</h4>
-                    ${data.GoogleSearch && data.GoogleSearch.length > 0 ? 
-                        data.GoogleSearch.map(item => `
-                            <a class="link" href="${item.link}" target="_blank">${item.title}</a>
-                            <p>${item.description}</p>
-                        `).join('') : 
-                        '<p>No Google links available.</p>'}
-                    <h4>YouTube Links:</h4>
-                    
-                    ${data.YoutubeSearch && data.YoutubeSearch.length > 0 ? 
-                       
-                        data.YoutubeSearch.map(item => `
-
-                        
-                            <a class="link" href="${item.link}" target="_blank">${item.title}</a>
-                        `).join('') : 
-                        '<p>No YouTube links available.</p>'}
-                `;
+                if (data.error) {
+                    resultsDiv.innerHTML = `<p style="color: red;">Error: ${data.error}</p>`;
+                } else {
+                    resultsDiv.innerHTML = `
+                        <h3>Detection Result</h3>
+                        <p>${data.instructions}</p>
+                        <h4>Google Links:</h4>
+                        ${data.GoogleSearch && data.GoogleSearch.length > 0 ? 
+                            data.GoogleSearch.map(group => 
+                                group.map(item => `
+                                    <a class="link" href="${item.link}" target="_blank">${item.title}</a>
+                                    <p>${item.description}</p>
+                                `).join('')
+                            ).join('') : 
+                            '<p>No Google links available.</p>'}
+                        <h4>YouTube Links:</h4>
+                        ${data.YoutubeSearch && data.YoutubeSearch.length > 0 ? 
+                            data.YoutubeSearch.map(group => 
+                                group.map(item => `
+                                    <a class="link" href="${item.link}" target="_blank">${item.title}</a>
+                                `).join('')
+                            ).join('') : 
+                            '<p>No YouTube links available.</p>'}
+                    `;
+                }
             })
             .catch(error => {
                 console.error('Error:', error);
