@@ -1,3 +1,5 @@
+
+
 from typing import Tuple
 from flask import Flask, request, jsonify
 
@@ -60,8 +62,10 @@ def process():
             temp_file_path = temp_file.name
 
         result = analyzer.auto_detect(temp_file_path)
-        os.remove(temp_file_path)
 
+        # result = result[0]
+
+        os.remove(temp_file_path)
     elif image_or_text == 'ingredient_list':
         # Handle ingredient list processing
         if 'ingredient_list' not in request.form:
@@ -75,14 +79,13 @@ def process():
 
     # Generate a unique ID and store the result in a JSON file
     analysis_id = str(uuid.uuid4())
-    save_analysis_to_file(analysis_id, result)
+    save_analysis_to_file(analysis_id, result[0])
 
     # Step 2: Get food suggestions
-    food_suggestions = analyzer.get_food_suggestions(result)
-
+    food_suggestions = result[1]
 
     # Step 3: Return food suggestions and wait for user choice
-    return jsonify({"analysis_id": analysis_id, "response": result, "food_suggestions": food_suggestions})
+    return jsonify({"analysis_id": analysis_id, "response": result[0], "food_suggestions": food_suggestions})
 
 
 

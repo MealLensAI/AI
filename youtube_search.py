@@ -74,7 +74,11 @@ class YouTubeSearch:
 
 if __name__ == "__main__":
     # Replace with your own API key
-    youtube_api_key = 'youtube_api_key'
+    api_key = "AIzaSyCMV1RzXC62lSyDxqcqlky-p1UzHqH2XEw"
+    base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    youtube_api_key = 'AIzaSyCgbgyVCdZy4oBTw8UvL3_UmD6tVi0ovyw'
+    google_search_api_key = 'AIzaSyDHvkvp4jGmkIHntqrZ2HQGWC3HGqGtt_4'
+    youtube_api_key = youtube_api_key
 
     # Create YouTubeSearch instance
     youtube_search = YouTubeSearch(youtube_api_key)
