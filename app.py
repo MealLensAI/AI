@@ -111,7 +111,7 @@ def instructions():
 
 
     YT = youtube_search.YouTubeSearch(youtube_api_key)
-    GS = google_search.GoogleSearch(google_search_api_key, cx)
+    GS = google_search.GoogleSearch()
 
     YT = YT.main(user_choice)
     GS = GS.main(user_choice)

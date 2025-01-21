@@ -107,10 +107,14 @@ class IngredientAnalyzer:
     def get_cooking_instructions_and_ingredients(self, ingredient_list, user_choice):
 
         print(user_choice)
+
         prompt = (
-            f"Based on the ingredient list given: '{ingredient_list}', generate step-by-step instructions to make {user_choice}. "
-            f"Also, suggest any additional ingredients needed to make this meal if the provided ingredients are insufficient."
+            f"You are given a list of food ingredient:'{ingredient_list}'"
+            f"'step-by-step-instructions':give a step-by-step instructions to make: '{user_choice}'.\n"
+            "Also, suggest any additional ingredients needed to make this meal if the provided ingredients are insufficient."
+            # "If it does not need any additional ingredients, use an empty list for 'Additional_ingredient'."
         )
+
         response = self.client.create_completion(
             model="gemini-2.0-flash-exp",
             messages=[
@@ -118,9 +122,25 @@ class IngredientAnalyzer:
                     "role": "user",
                     "content": prompt
                 }
-            ]
-        )
-        return response.choices[0].message.content
+            ])
+
+
+
+        response_data =  response.choices[0].message.content
+        return  response_data
+
+        # response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
+        # if response_data:  # Ensure there's content to parse
+        #     response_data = json.loads(response_data)  # Parse the JSON string
+        # else:
+        #     raise ValueError("Received empty response data from the API.")
+        #
+        # food_suggestions = response_data.get("step-by-step-instructions", [])
+        # Additional_ingredient = response_data.get("Additional_ingredient", [])
+        #
+        # return Additional_ingredient, food_suggestions  # Return the parsed JSON object
+
+
 
 
 # Check for the food and identify it
@@ -201,8 +221,15 @@ if __name__ == '__main__':
     base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
     client = OpenAIClient(api_key, base_url)
     session = IngredientAnalyzer(client)
-    session = session.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img.jpg')
-    print(session)
+    # session = session.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img.jpg')
+    se = session.get_cooking_instructions_and_ingredients(["rice", "beans", "egg", "oil"], "rice and stew")
+    print(se)
+
+
+
+
+
+
     # session1 = Food_Analyzer(client)
 
     # result = session1.food_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img_6.png')
