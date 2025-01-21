@@ -144,9 +144,9 @@ def food_detect():
         for i in food_detected:
 
             YT = youtube_search.YouTubeSearch(youtube_api_key)
-            GS = google_search.GoogleSearch(google_search_api_key, cx)
+            GS = google_search.GoogleSearch()
             YT = YT.main(i,5)
-            GS = GS.main(i,5)
+            GS = GS.main(i)
             YT_result.append(YT)
             GS_result.append(GS)
 
