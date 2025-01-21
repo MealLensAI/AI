@@ -2,7 +2,7 @@ from googlesearch import search  # Importing the search function from googlesear
 import ssl
 import certifi
 import requests
-import re
+from bs4 import BeautifulSoup
 
 class GoogleSearch:
     def __init__(self, max_results=5):
@@ -14,26 +14,44 @@ class GoogleSearch:
         """
         self.max_results = max_results
 
-    def get_page_title(self, url):
+    def get_page_info(self, url):
         """
-        Fetch the title of a webpage given its URL.
+        Fetch the title and description of a webpage given its URL.
 
         Args:
             url (str): The URL of the webpage
 
         Returns:
-            str: The title of the webpage
+            dict: A dictionary containing the title and description of the webpage
         """
         try:
-            response = requests.get(url)
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+            }
+            response = requests.get(url, headers=headers)
             response.raise_for_status()  # Raise an error for bad responses
-            # Use regex to find the title tag
-            title_match = re.search(r'<title>(.*?)</title>', response.text, re.IGNORECASE)
-            title = title_match.group(1) if title_match else 'No title found'
-            return title
+            
+            # Parse the HTML content using BeautifulSoup
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Extract the title
+            title = soup.title.string if soup.title else 'No title found'
+            
+            # Extract the meta description
+            description = ''
+            description_tag = soup.find('meta', attrs={'name': 'description'})
+            if description_tag and 'content' in description_tag.attrs:
+                description = description_tag['content']
+            else:
+                description = 'No description found'
+            
+            return {
+                'title': title,
+                'description': description
+            }
         except Exception as e:
-            print(f"An error occurred while fetching the title: {str(e)}")
-            return 'Error fetching title'
+            print(f"An error occurred while fetching the title and description: {str(e)}")
+            return {'title': 'Error fetching title', 'description': 'Error fetching description'}
 
     def get_search_results(self, query):
         """
@@ -43,7 +61,7 @@ class GoogleSearch:
             query (str): The search term to find results for
 
         Returns:
-            list: List of dictionaries containing result titles and URLs
+            list: List of dictionaries containing result titles, descriptions, and URLs
         """
         try:
             # Configure SSL context
@@ -52,9 +70,14 @@ class GoogleSearch:
 
             results = []
             for url in search(query, num_results=self.max_results):
-                title = self.get_page_title(url)  # Fetch the title for each URL
+                # Ensure the URL is absolute
+                if not url.startswith(('http://', 'https://')):
+                    continue  # Skip invalid URLs
+
+                page_info = self.get_page_info(url)  # Fetch the title and description for each URL
                 results.append({
-                    'title': title,
+                    'title': page_info['title'],
+                    'description': page_info['description'],
                     'link': url
                 })
 
@@ -84,6 +107,7 @@ if __name__ == "__main__":
         print("\nHere are your search results:")
         for i, result in enumerate(results, 1):
             print(f"\n{i}. {result['title']}")
+            print(f"   Description: {result['description']}")
             print(f"   Link: {result['link']}")
     else:
         print("No results found or an error occurred.")
