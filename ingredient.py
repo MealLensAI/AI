@@ -230,10 +230,10 @@ if __name__ == '__main__':
 
 
 
-    # session1 = Food_Analyzer(client)
+    session1 = Food_Analyzer(client)
 
-    # result = session1.food_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img_6.png')
-    # print(result)
+    result = session1.food_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img_6.png')
+    print(result)
 
     # food_detected = session1.get_food_suggestions('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img.jpg')
     # print(food_detected)

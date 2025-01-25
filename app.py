@@ -141,12 +141,15 @@ def food_detect():
         # print(food_detected)
         YT_result = []
         GS_result = []
+
+        inst = "How to make"
         for i in food_detected:
+            print(i)
 
             YT = youtube_search.YouTubeSearch(youtube_api_key)
             GS = google_search.GoogleSearch()
-            YT = YT.main(i,5)
-            GS = GS.main(i)
+            YT = YT.main(f"How to make {i}",5)
+            GS = GS.main(f"How to make {i}")
             YT_result.append(YT)
             GS_result.append(GS)
 
