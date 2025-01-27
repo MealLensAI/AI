@@ -41,8 +41,6 @@ def load_analysis_from_file(analysis_id):
     with open(file_path, 'r') as f:
         return json.load(f)
 
-
-
 @app.route('/')
 def home():
     return jsonify(message="Welcome to your Flask API with HTTPS!")
@@ -164,4 +162,4 @@ def food_detect():
 
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=7017)
+    app.run(host='0.0.0.0', port=7017, debug=True)
