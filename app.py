@@ -41,6 +41,12 @@ def load_analysis_from_file(analysis_id):
     with open(file_path, 'r') as f:
         return json.load(f)
 
+
+@app.route('/', methods=['POST'])
+def here():
+
+    return jsonify({"response": "Welcome here"})
+
 @app.route('/process', methods=['POST'])
 def process():
     # Step 1: Check for image or ingredient list
