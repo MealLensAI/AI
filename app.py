@@ -42,7 +42,7 @@ def load_analysis_from_file(analysis_id):
         return json.load(f)
 
 
-@app.route('/', methods=['POST'])
+@app.route('/', methods=['GET'])
 def here():
 
     return jsonify({"response": "Welcome here"})
