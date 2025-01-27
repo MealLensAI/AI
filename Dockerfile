@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/
 
 # Copy SSL certificates into the container (or mount them at runtime)
-COPY /path/to/certs /etc/letsencrypt/
+COPY ./certs /etc/letsencrypt/
 
 # Expose the port the app runs on
 EXPOSE 7017
