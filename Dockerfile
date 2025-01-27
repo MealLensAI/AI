@@ -24,4 +24,4 @@ EXPOSE 7017
 ENV FLASK_ENV=production
 
 # Start the Flask application
-CMD ["flask", "run", "--host", "0.0.0.0", "--port=7017", "--cert=/etc/letsencrypt/live/ai.meallensai.com/fullchain.pem", "--key=/etc/letsencrypt/live/ai.meallensai.com/privkey.pem"]
+CMD ["flask", "run", "--host", "0.0.0.0", "--port=7017"]
