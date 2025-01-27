@@ -42,10 +42,10 @@ def load_analysis_from_file(analysis_id):
         return json.load(f)
 
 
-@app.route('/', methods=['GET'])
-def here():
 
-    return jsonify({"response": "Welcome here"})
+@app.route('/')
+def home():
+    return jsonify(message="Welcome to your Flask API with HTTPS!")
 
 @app.route('/process', methods=['POST'])
 def process():
