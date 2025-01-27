@@ -162,4 +162,11 @@ def food_detect():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=7017, debug=True)
+    app.run(
+        host="0.0.0.0",
+        port=7017,
+        ssl_context=(
+            "/etc/letsencrypt/live/ai.meallensai.com/fullchain.pem",
+            "/etc/letsencrypt/live/ai.meallensai.com/privkey.pem"
+        )
+    )

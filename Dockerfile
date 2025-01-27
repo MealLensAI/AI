@@ -17,12 +17,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application code into the container
 COPY . /app/
 
+# Copy SSL certificates into the container (or mount them at runtime)
+COPY /path/to/certs /etc/letsencrypt/
+
 # Expose the port the app runs on
 EXPOSE 7017
 
 # Set the environment variable for Flask to run in production mode
 ENV FLASK_ENV=production
 
-# Start the Flask application
-ENV FLASK_APP=app.py
-CMD ["flask", "run", "--host", "0.0.0.0","--port=7017"]
+# Start the Flask application with SSL
+CMD ["flask", "run", "--host", "0.0.0.0", "--port=7017", "--cert=/etc/letsencrypt/live/ai.meallensai.com/fullchain.pem", "--key=/etc/letsencrypt/live/ai.meallensai.com/privkey.pem"]
