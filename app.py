@@ -1,10 +1,10 @@
 
 
 from typing import Tuple
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,render_template
 
 import google_search
-from  google_search import GoogleSearch
+# from  google_search import GoogleSearch
 from ingredient import OpenAIClient, IngredientAnalyzer,Food_Analyzer
 import os
 import tempfile
@@ -43,7 +43,7 @@ def load_analysis_from_file(analysis_id):
 
 @app.route('/')
 def home():
-    return jsonify(message="Welcome to your Flask API with HTTPS!")
+    return render_template("index.html")
 
 @app.route('/process', methods=['POST'])
 def process():
@@ -165,8 +165,5 @@ if __name__ == '__main__':
     app.run(
         host="0.0.0.0",
         port=7017,
-        ssl_context=(
-            "/etc/letsencrypt/live/ai.meallensai.com/fullchain.pem",
-            "/etc/letsencrypt/live/ai.meallensai.com/privkey.pem"
-        )
+
     )
