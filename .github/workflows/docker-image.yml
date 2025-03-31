@@ -1,0 +1,27 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag flask-app:latest
+
+      - name: Stop existing container (if running)
+        run: |
+          docker stop flask-container || true
+          docker rm flask-container || true
+
+      - name: Run the container
+        run: |
+          docker run -d -p 7017:7017 --name flask-container flask-app:latest
