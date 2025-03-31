@@ -11,25 +11,34 @@ class OpenAIClient:
     def create_completion(self, model, messages):
         return self.client.chat.completions.create(model=model, messages=messages)
 
+
 class ImageProcessor:
     @staticmethod
     def encode_image(image_path):
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
+
 class IngredientAnalyzer:
     def __init__(self, client):
         self.client = client
 
-
-
     def auto_detect(self, image_path):
         base64_image = ImageProcessor.encode_image(image_path)
         prompt = (
-            "You are given an image of food ingredients. Please respond in JSON format with the following keys:\n"
-            "'ingredients': A list of ingredients detected in the image.\n"
-            "'food_suggestions': A list of food that can be made with the ingredient.\n"
-            "If you cannot detect any ingredients, use an empty list for 'ingredients' and 'food_suggestions'."
+            "You are given an image of food ingredients. Please respond strictly in JSON format. "
+            "Ensure that:\n"
+            "- All keys and string values use double quotes (\"\").\n"
+            "- The JSON structure follows proper formatting.\n"
+            "\n"
+            "Return a JSON object with the following keys:\n"
+            "{\n"
+            '  "ingredients": [list of detected ingredients],\n'
+            '  "food_suggestions": [list of possible food dishes]\n'
+            "}\n"
+            "\n"
+            "If no ingredients are detected, return:\n"
+            '{\n  "ingredients": [],\n  "food_suggestions": []\n}'
         )
 
         response = self.client.create_completion(
@@ -86,22 +95,14 @@ class IngredientAnalyzer:
         except Exception as e:
             print(f"Error processing API response: {e}")
             response_data = {}  # Default to an empty dictionary if there's an error
-            ingredients = ['Please Retry.......']
-            food_suggestions = ['Please Retry.....']
+            ingredients = ['Retry.......']
+            food_suggestions = ['Retry.....']
 
         # Store them as class variables for use elsewhere
         self.ingredients = ingredients
         self.food_suggestions = food_suggestions
 
         return self.ingredients, self.food_suggestions  # Return the parsed JSON object
-
-
-
-
-
-
-
-
 
     def manual_prompt(self, user_input):
         ingredients = [ingredient.strip() for ingredient in user_input.split(',')]
@@ -121,8 +122,6 @@ class IngredientAnalyzer:
                 }
             ])
 
-
-
         response_data = response.choices[0].message.content
 
         response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
@@ -132,7 +131,6 @@ class IngredientAnalyzer:
             raise ValueError("Received empty response data from the API.")
 
         food_suggestions = response_data.get("food_suggestions", [])
-
 
         return ingredients, food_suggestions  # Return the parsed JSON object
 
@@ -156,10 +154,8 @@ class IngredientAnalyzer:
                 }
             ])
 
-
-
-        response_data =  response.choices[0].message.content
-        return  response_data
+        response_data = response.choices[0].message.content
+        return response_data
 
         # response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
         # if response_data:  # Ensure there's content to parse
@@ -173,8 +169,6 @@ class IngredientAnalyzer:
         # return Additional_ingredient, food_suggestions  # Return the parsed JSON object
 
 
-
-
 # Check for the food and identify it
 
 
@@ -186,8 +180,7 @@ class Food_Analyzer:
         base64_image = ImageProcessor.encode_image(image_path)
         prompt = ("You are given an image of food . Tell me what food you are seeing,"
                   "list the ingredient that is used to make it."
-                    f"Based on the ingredient analysis,, generate step-by-step instructions to make the food. "
-
+                  f"Based on the ingredient analysis,, generate step-by-step instructions to make the food. "
 
                   )
         response = self.client.create_completion(
@@ -205,11 +198,11 @@ class Food_Analyzer:
         return response.choices[0].message.content
 
     def get_food_suggestions(self, image):
-
         initial_prompt_result = self.food_detect(image)
-        prompt = (f"Extract just the name of the food being seen from this and return it to me and return it as a list separated by commas"
-                  # f",if there is 'or' separate the different food and make them different "
-                  f"{initial_prompt_result}.")
+        prompt = (
+            f"Extract just the name of the food being seen from this and return it to me and return it as a list separated by commas"
+            # f",if there is 'or' separate the different food and make them different "
+            f"{initial_prompt_result}.")
         response = self.client.create_completion(
             model="gemini-1.5-flash",
             messages=[
@@ -220,10 +213,7 @@ class Food_Analyzer:
             ]
         )
 
-        return initial_prompt_result,response.choices[0].message.content.split(", ")
-
-
-
+        return initial_prompt_result, response.choices[0].message.content.split(", ")
 
 
 class InteractiveSession:
@@ -245,8 +235,10 @@ class InteractiveSession:
         user_choice = int(input("Enter the food you want to make: "))
         # print("You chose: ", user_choice)
 
-        cooking_instructions = self.analyzer.get_cooking_instructions_and_ingredients(ingredient_analysis, food_suggestions[user_choice])
+        cooking_instructions = self.analyzer.get_cooking_instructions_and_ingredients(ingredient_analysis,
+                                                                                      food_suggestions[user_choice])
         print(cooking_instructions)
+
 
 if __name__ == '__main__':
     api_key = "AIzaSyCMV1RzXC62lSyDxqcqlky-p1UzHqH2XEw"
@@ -257,11 +249,6 @@ if __name__ == '__main__':
     # se = session.get_cooking_instructions_and_ingredients(["rice", "beans", "egg", "oil"], "rice and stew")
     print(session)
 
-
-
-
-
-
     # session1 = Food_Analyzer(client)
     #
     # result = session1.food_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
@@ -269,9 +256,6 @@ if __name__ == '__main__':
 
     # food_detected = session1.get_food_suggestions('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img.jpg')
     # print(food_detected)
-
-
-
 
     # auto_mode = True  # Set this to True or False based on your requirement
     # ingredients_input = None
