@@ -1,4 +1,4 @@
-name: Web Build + Deployment to GitHub Pages 
+name: Flask App Deployment
 
 on:
   push:
@@ -14,14 +14,11 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  BUILD_NUMBER: 1
-  BUILD_VERSION: 1.0.0
   PYTHON_VERSION: "3.12"
   PYTHONUTF8: 1
-  UV_NO_PROGRESS: 1
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -42,31 +39,7 @@ jobs:
       run: |
         export FLASK_APP=app.py
         export FLASK_ENV=production
-        flask run --host=0.0.0.0 --port=7017 &
+        nohup flask run --host=0.0.0.0 --port=7017 &
 
-    - name: Upload Artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        name: web-build-artifact
-        path: build/web
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        
-      - name: Deploy to GitHub Pages 🚀
-        if: github.event_name == 'push'
-        id: deployment
-        uses: actions/deploy-pages@v4.0.5
-        with:
-          artifact_name: web-build-artifact
+    # - name: Keep Workflow Running
+    #   run: sleep 600
