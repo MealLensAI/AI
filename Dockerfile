@@ -4,6 +4,7 @@ FROM python:3.10-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
+ENV API_KEY=7HDDKgz8kbcwyhrMVuB1uhlWGjRYusdLkMKWjmtBoWDKJ0slp7QlJQQJ99BCACHYHv6XJ3w3AAAAACOGeRlr
 
 # Set the working directory
 WORKDIR /app
