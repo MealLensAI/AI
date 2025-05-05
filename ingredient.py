@@ -1,15 +1,25 @@
 import base64
-from openai import OpenAI
+from openai import AzureOpenAI
 import os
 import json
-
+from dotenv import load_dotenv
+load_dotenv()
 
 class OpenAIClient:
-    def __init__(self, api_key, base_url):
-        self.client = OpenAI(api_key=api_key, base_url=base_url)
+    def __init__(self, base_url, api_version):
+
+        api_key =   os.getenv('API_KEY')
+        self.client = AzureOpenAI(
+            api_key=api_key,
+            api_version=api_version,
+            azure_endpoint=base_url
+        )
 
     def create_completion(self, model, messages):
-        return self.client.chat.completions.create(model=model, messages=messages)
+        return self.client.chat.completions.create(
+            model=model,
+            messages=messages
+        )
 
 
 class ImageProcessor:
@@ -42,16 +52,21 @@ class IngredientAnalyzer:
         )
 
         response = self.client.create_completion(
-            model="gemini-2.0-flash-exp",
+            model="gpt-4-vision-preview",  # Azure OpenAI model name
             messages=[
                 {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                    ],
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
                 }
-            ],
+            ]
         )
 
         # Parse the JSON response
@@ -114,7 +129,7 @@ class IngredientAnalyzer:
         )
 
         response = self.client.create_completion(
-            model="gemini-2.0-flash-exp",
+            model="gpt-4",  # Azure OpenAI model name
             messages=[
                 {
                     "role": "user",
@@ -146,7 +161,7 @@ class IngredientAnalyzer:
         )
 
         response = self.client.create_completion(
-            model="gemini-2.0-flash-exp",
+            model="gpt-4",  # Azure OpenAI model name
             messages=[
                 {
                     "role": "user",
@@ -184,16 +199,21 @@ class Food_Analyzer:
 
                   )
         response = self.client.create_completion(
-            model="gemini-1.5-flash",
+            model="gpt-4-vision-preview",  # Azure OpenAI model name
             messages=[
                 {
                     "role": "user",
                     "content": [
                         {"type": "text", "text": prompt},
-                        {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}},
-                    ],
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
                 }
-            ],
+            ]
         )
         return response.choices[0].message.content
 
@@ -204,7 +224,7 @@ class Food_Analyzer:
             # f",if there is 'or' separate the different food and make them different "
             f"{initial_prompt_result}.")
         response = self.client.create_completion(
-            model="gemini-1.5-flash",
+            model="gpt-4",  # Azure OpenAI model name
             messages=[
                 {
                     "role": "user",
@@ -241,12 +261,15 @@ class InteractiveSession:
 
 
 if __name__ == '__main__':
-    api_key = "AIzaSyCMV1RzXC62lSyDxqcqlky-p1UzHqH2XEw"
-    base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    client = OpenAIClient(api_key, base_url)
+    # Azure OpenAI configuration
+    api_key = ""
+    base_url = "https://azureai3111594496.openai.azure.com/openai/deployments/MeallensAI/chat/completions?api-version=2025-01-01-preview"
+    api_version = "2024-02-15-preview"  # Use the latest API version
+
+    client = OpenAIClient( base_url, api_version)
     session = IngredientAnalyzer(client)
+
     session = session.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
-    # se = session.get_cooking_instructions_and_ingredients(["rice", "beans", "egg", "oil"], "rice and stew")
     print(session)
 
     # session1 = Food_Analyzer(client)

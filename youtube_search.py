@@ -1,79 +1,290 @@
+import base64
+from openai import AzureOpenAI
+import os
+import json
 
-from pytube import Search  # New import for the updated search method
-import ssl
-import certifi
+
+class OpenAIClient:
+    def __init__(self, api_key, base_url, api_version):
+        self.client = AzureOpenAI(
+            api_key=api_key,
+            api_version=api_version,
+            azure_endpoint=base_url
+        )
+
+    def create_completion(self, model, messages):
+        return self.client.chat.completions.create(
+            model=model,
+            messages=messages
+        )
 
 
-class YouTubeSearch:
-    def __init__(self, api_key, max_results=5):
-        """
-        Initialize YouTubeSearch instance with API key and max results.
+class ImageProcessor:
+    @staticmethod
+    def encode_image(image_path):
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
 
-        Args:
-            api_key (str): The API key to access YouTube API
-            max_results (int): Maximum number of results to return
-        """
-        self.api_key = api_key
-        self.max_results = max_results
 
-    def get_video_links(self, search_query, max_results=5):
-        """
-        Get YouTube video links based on a search query.
+class IngredientAnalyzer:
+    def __init__(self, client):
+        self.client = client
 
-        Args:
-            search_query (str): The search term to find videos for
+    def auto_detect(self, image_path):
+        base64_image = ImageProcessor.encode_image(image_path)
+        prompt = (
+            "You are given an image of food ingredients. Please respond strictly in JSON format. "
+            "Ensure that:\n"
+            "- All keys and string values use double quotes (\"\").\n"
+            "- The JSON structure follows proper formatting.\n"
+            "\n"
+            "Return a JSON object with the following keys:\n"
+            "{\n"
+            '  "ingredients": [list of detected ingredients],\n'
+            '  "food_suggestions": [list of possible food dishes]\n'
+            "}\n"
+            "\n"
+            "If no ingredients are detected, return:\n"
+            '{\n  "ingredients": [],\n  "food_suggestions": []\n}'
+        )
 
-        Returns:
-            list: List of dictionaries containing video titles and links
-        """
+        response = self.client.create_completion(
+            model="gpt-4-vision-preview",  # Azure OpenAI model name
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        )
+
+        # Parse the JSON response
+        response_data = response.choices[0].message.content
+
+        # response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
+        # if response_data:  # Ensure there's content to parse
+        #     response_data = json.loads(response_data)  # Parse the JSON string
+        # else:
+        #     raise ValueError("Received empty response data from the API.")
+        #
+        # ingredients = response_data.get("ingredients", [])
+        # food_suggestions = response_data.get("food_suggestions", [])
+
         try:
-            # Configure SSL context
-            ssl_context = ssl.create_default_context(cafile=certifi.where())
-            ssl._create_default_https_context = lambda: ssl_context  # Correctly set the default context
+            # Ensure response_data is a string before processing
+            if not isinstance(response_data, str):
+                raise ValueError("Response data is not a string.")
 
-            # Use pytube to search for videos
-            s = Search(search_query)
-            videos = []
-            for video in s.results[:max_results]:
-                videos.append({
-                    'title': video.title,
-                    'link': f'https://youtube.com/watch?v={video.video_id}'
-                })
+            # Extract JSON block if it exists
+            if "```json" in response_data:
+                try:
+                    response_data = response_data.strip().split("```json", 1)[1].strip().rstrip("```")
+                except IndexError:
+                    raise ValueError("Failed to extract JSON block from response.")
 
-            return videos
+            # Ensure we have valid content
+            if not response_data.strip():
+                raise ValueError("Received empty response data from the API.")
+
+            # Parse the JSON string
+            try:
+                response_data = json.loads(response_data)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON format: {e}. Raw response: {repr(response_data)}")
+
+            # Extract ingredients and food suggestions
+            ingredients = response_data.get("ingredients", [])
+            food_suggestions = response_data.get("food_suggestions", [])
 
         except Exception as e:
-            print(f"An error occurred: {str(e)}")
-            return []
+            print(f"Error processing API response: {e}")
+            response_data = {}  # Default to an empty dictionary if there's an error
+            ingredients = ['Retry.......']
+            food_suggestions = ['Retry.....']
 
-    def main(self,food,max_results = 5):
-        """
-        Main method to handle user input and output YouTube search results.
-        """
+        # Store them as class variables for use elsewhere
+        self.ingredients = ingredients
+        self.food_suggestions = food_suggestions
 
-        results = self.get_video_links(food,max_results)
+        return self.ingredients, self.food_suggestions  # Return the parsed JSON object
 
-        if results:
-            return results
-            # print("\nHere are your video links:")
-            # for i, video in enumerate(results, 1):
-            #     print(f"\n{i}. {video['title']}")
-            #     print(f"   Link: {video['link']}")
+    def manual_prompt(self, user_input):
+        ingredients = [ingredient.strip() for ingredient in user_input.split(',')]
+
+        prompt = (
+            f"You are given a list of food ingredient:'{ingredients}'. Please respond in JSON format with the following keys:\n"
+            "'food_suggestions': A list of food that can be made with the ingredient.\n"
+            "If you cannot see any ingredients, use an empty list for 'ingredients' and 'food_suggestions'."
+        )
+
+        response = self.client.create_completion(
+            model="gpt-4",  # Azure OpenAI model name
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ])
+
+        response_data = response.choices[0].message.content
+
+        response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
+        if response_data:  # Ensure there's content to parse
+            response_data = json.loads(response_data)  # Parse the JSON string
         else:
-            # print("No videos found or an error occurred.")
-            return []
+            raise ValueError("Received empty response data from the API.")
+
+        food_suggestions = response_data.get("food_suggestions", [])
+
+        return ingredients, food_suggestions  # Return the parsed JSON object
+
+    def get_cooking_instructions_and_ingredients(self, ingredient_list, user_choice):
+
+        print(user_choice)
+
+        prompt = (
+            f"You are given a list of food ingredient:'{ingredient_list}'"
+            f"'step-by-step-instructions':give a step-by-step instructions to make: '{user_choice}'.\n"
+            "Also, suggest any additional ingredients needed to make this meal if the provided ingredients are insufficient."
+            # "If it does not need any additional ingredients, use an empty list for 'Additional_ingredient'."
+        )
+
+        response = self.client.create_completion(
+            model="gpt-4",  # Azure OpenAI model name
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ])
+
+        response_data = response.choices[0].message.content
+        return response_data
+
+        # response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
+        # if response_data:  # Ensure there's content to parse
+        #     response_data = json.loads(response_data)  # Parse the JSON string
+        # else:
+        #     raise ValueError("Received empty response data from the API.")
+        #
+        # food_suggestions = response_data.get("step-by-step-instructions", [])
+        # Additional_ingredient = response_data.get("Additional_ingredient", [])
+        #
+        # return Additional_ingredient, food_suggestions  # Return the parsed JSON object
 
 
-if __name__ == "__main__":
-    # Replace with your own API key
-    api_key = "AIzaSyCMV1RzXC62lSyDxqcqlky-p1UzHqH2XEw"
-    base_url = "https://generativelanguage.googleapis.com/v1beta/openai/"
-    youtube_api_key = 'AIzaSyAzk-urSNH6VtvH8cZdJlKT0cIdJKV9SJA'
-    google_search_api_key = 'AIzaSyDHvkvp4jGmkIHntqrZ2HQGWC3HGqGtt_4'
-    youtube_api_key = youtube_api_key
+# Check for the food and identify it
 
-    # Create YouTubeSearch instance
-    youtube_search = YouTubeSearch(youtube_api_key)
 
-    # Run the main method of the YouTubeSearch class
-    print(youtube_search.main("math"))
+class Food_Analyzer:
+    def __init__(self, client):
+        self.client = client
+
+    def food_detect(self, image_path):
+        base64_image = ImageProcessor.encode_image(image_path)
+        prompt = ("You are given an image of food . Tell me what food you are seeing,"
+                  "list the ingredient that is used to make it."
+                  f"Based on the ingredient analysis,, generate step-by-step instructions to make the food. "
+
+                  )
+        response = self.client.create_completion(
+            model="gpt-4-vision-preview",  # Azure OpenAI model name
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        )
+        return response.choices[0].message.content
+
+    def get_food_suggestions(self, image):
+        initial_prompt_result = self.food_detect(image)
+        prompt = (
+            f"Extract just the name of the food being seen from this and return it to me and return it as a list separated by commas"
+            # f",if there is 'or' separate the different food and make them different "
+            f"{initial_prompt_result}.")
+        response = self.client.create_completion(
+            model="gpt-4",  # Azure OpenAI model name
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ]
+        )
+
+        return initial_prompt_result, response.choices[0].message.content.split(", ")
+
+
+class InteractiveSession:
+    def __init__(self, client):
+        self.analyzer = IngredientAnalyzer(client)
+
+    def run(self, auto, ingredients_input=None):
+        if auto:
+            ingredient_analysis = self.analyzer.auto_detect('img.png')
+        else:
+            ingredient_analysis = self.analyzer.manual_prompt(ingredients_input)
+
+        # print(ingredient_analysis)
+        food_suggestions = self.analyzer.get_food_suggestions(ingredient_analysis)
+        print(food_suggestions)
+
+        # print(food_suggestions[0])
+
+        user_choice = int(input("Enter the food you want to make: "))
+        # print("You chose: ", user_choice)
+
+        cooking_instructions = self.analyzer.get_cooking_instructions_and_ingredients(ingredient_analysis,
+                                                                                      food_suggestions[user_choice])
+        print(cooking_instructions)
+
+
+if __name__ == '__main__':
+    # Azure OpenAI configuration
+    api_key = "7HDDKgz8kbcwyhrMVuB1uhlWGjRYusdLkMKWjmtBoWDKJ0slp7QlJQQJ99BCACHYHv6XJ3w3AAAAACOGeRlr"
+    base_url = "https://azureai3111594496.openai.azure.com/openai/deployments/MeallensAI/chat/completions?api-version=2025-01-01-preview"
+    api_version = "2024-02-15-preview"  # Use the latest API version
+
+    client = OpenAIClient(api_key, base_url, api_version)
+    session = IngredientAnalyzer(client)
+
+    session = session.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
+    print(session)
+
+    # session1 = Food_Analyzer(client)
+    #
+    # result = session1.food_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
+    # print(result)
+
+    # food_detected = session1.get_food_suggestions('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img.jpg')
+    # print(food_detected)
+
+    # auto_mode = True  # Set this to True or False based on your requirement
+    # ingredients_input = None
+    #
+    # if not auto_mode:
+    #     ingredients_input = input("Enter ingredients separated by commas: ")
+    #
+    # session.run(auto_mode, ingredients_input)
+
+
+
+
