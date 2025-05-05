@@ -20,9 +20,8 @@ api_key = os.getenv('API_KEY')
 youtube_api_key = 'AIzaSyCgbgyVCdZy4oBTw8UvL3_UmD6tVi0ovyw'
 google_search_api_key = 'AIzaSyDHvkvp4jGmkIHntqrZ2HQGWC3HGqGtt_4'
 cx = '13a96d83a84c64f2d'
-base_url = "https://azureai3111594496.openai.azure.com/openai/deployments/MeallensAI/chat/completions?api-version=2025-01-01-preview"
-api_version = "2024-02-15-preview"  # Use the latest API version
-client = OpenAIClient(base_url, api_version)
+
+client = OpenAIClient()
 analyzer = IngredientAnalyzer(client)
 food_analyzer = Food_Analyzer(client)
 

@@ -6,11 +6,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class OpenAIClient:
-    def __init__(self, base_url, api_version):
+    def __init__(self):
+        base_url = "https://azureai3111594496.openai.azure.com/openai/deployments/MeallensAI/chat/completions?api-version=2025-01-01-preview"
+        api_version = "2024-02-15-preview"  # Use the latest API version
 
-        api_key =   os.getenv('API_KEY')
         self.client = AzureOpenAI(
-            api_key=api_key,
+            api_key = os.getenv('API_KEY'),
             api_version=api_version,
             azure_endpoint=base_url
         )
@@ -262,15 +263,24 @@ class InteractiveSession:
 
 if __name__ == '__main__':
     # Azure OpenAI configuration
-    api_key = ""
-    base_url = "https://azureai3111594496.openai.azure.com/openai/deployments/MeallensAI/chat/completions?api-version=2025-01-01-preview"
-    api_version = "2024-02-15-preview"  # Use the latest API version
 
-    client = OpenAIClient( base_url, api_version)
-    session = IngredientAnalyzer(client)
+    client = OpenAIClient()
+    model = IngredientAnalyzer(client)
 
-    session = session.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
-    print(session)
+    session = model.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
+    # print(session)
+
+    inst = model.get_cooking_instructions_and_ingredients(session[0],'rice')
+    print(inst)
+
+
+
+
+
+
+
+
+
 
     # session1 = Food_Analyzer(client)
     #
