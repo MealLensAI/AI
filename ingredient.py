@@ -158,6 +158,7 @@ class IngredientAnalyzer:
              f"You are given a list of food ingredient:'{ingredient_list}'"
             f"'step-by-step-instructions':give a step-by-step instructions to make: '{user_choice}'.\n"
             "Also, suggest any additional ingredients needed to make this meal if the provided ingredients are insufficient."
+            "Please return the response in proper markdown formating so that it can be displayed in a web page well"
             # "If it does not need any additional ingredients, use an empty list for 'Additional_ingredient'."
       )
 
