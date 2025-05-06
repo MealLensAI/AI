@@ -152,7 +152,7 @@ class IngredientAnalyzer:
 
     def get_cooking_instructions_and_ingredients(self, ingredient_list, user_choice):
 
-        print(user_choice)
+     
 
         prompt = (
           
@@ -211,9 +211,26 @@ class Food_Analyzer:
 
     def food_detect(self, image_path):
         base64_image = ImageProcessor.encode_image(image_path)
-        prompt = ("You are given an image of food . Tell me what food you are seeing,"
-                  "list the ingredient that is used to make it."
-                  f"Based on the ingredient analysis,, generate step-by-step instructions to make the food. "
+        prompt = (f"""
+You are an expert food analyst.
+
+You are given an image of food. Tell me what food you are seeing.
+
+Then:
+
+**1.** Identify the food name clearly.  
+**2.** List the ingredients used to make it.  
+Use *single asterisks* for each ingredient in the list.  
+**3.** Generate step-by-step cooking instructions based on the ingredients.  
+Start each step with a number followed by a dot (e.g., 1., 2., etc.).  
+Add fun and relevant emojis to make it engaging.  
+
+**Formatting rules**:
+- Use **double asterisks** for section titles like **Food Name**, **Ingredients**, **Instructions**.
+- Use *single asterisks* for ingredients or listed items.
+- Start each cooking step with a number and a dot (e.g., 1.).
+"""
+
 
                   )
         response = self.client.create_completion(
