@@ -159,8 +159,6 @@ class IngredientAnalyzer:
             f"'step-by-step-instructions':give a step-by-step instructions to make: '{user_choice}'.\n"
             "Also, suggest any additional ingredients needed to make this meal if the provided ingredients are insufficient."
             "Also add relevant emojis to the instructions"
-            "Also return the responses in proper markdown formating"
-            
             # "If it does not need any additional ingredients, use an empty list for 'Additional_ingredient'."
         )
 
@@ -199,10 +197,8 @@ class Food_Analyzer:
         base64_image = ImageProcessor.encode_image(image_path)
         prompt = ("You are given an image of food . Tell me what food you are seeing,"
                   "list the ingredient that is used to make it."
-                  f"Based on the ingredient analysis,, generate step-by-step instructions to make the food. "
-                   "Also add relevant emojis to the instructions"
-                   "Also return the responses in proper markdown formating"
-
+                  f"Based on the ingredient analysis, generate step-by-step instructions to make the food."
+                    "Also add relevant emojis to the instructions"
 
                   )
         response = self.client.create_completion(
