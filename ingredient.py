@@ -158,8 +158,8 @@ class IngredientAnalyzer:
             f"You are given a list of food ingredient:'{ingredient_list}'"
             f"'step-by-step-instructions':give a step-by-step instructions to make: '{user_choice}'.\n"
             "Also, suggest any additional ingredients needed to make this meal if the provided ingredients are insufficient."
-             "Also add relevant emojis to the instructions, and make it more engaging"
-             "please return to me proper formating please"
+            "Also add relevant emojis to the instructions"
+            "Also return the responses in proper markdown formating"
             
             # "If it does not need any additional ingredients, use an empty list for 'Additional_ingredient'."
         )
@@ -200,8 +200,9 @@ class Food_Analyzer:
         prompt = ("You are given an image of food . Tell me what food you are seeing,"
                   "list the ingredient that is used to make it."
                   f"Based on the ingredient analysis,, generate step-by-step instructions to make the food. "
-                   "Also add relevant emojis to the instructions, and make it more engaging"
-                   "please return to me proper formating please"
+                   "Also add relevant emojis to the instructions"
+                   "Also return the responses in proper markdown formating"
+
 
                   )
         response = self.client.create_completion(
