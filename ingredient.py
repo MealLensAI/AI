@@ -151,14 +151,15 @@ class IngredientAnalyzer:
         return ingredients, food_suggestions  # Return the parsed JSON object
 
     def get_cooking_instructions_and_ingredients(self, ingredient_list, user_choice):
-
         print(user_choice)
 
         prompt = (
             f"You are given a list of food ingredient:'{ingredient_list}'"
             f"'step-by-step-instructions':give a step-by-step instructions to make: '{user_choice}'.\n"
             "Also, suggest any additional ingredients needed to make this meal if the provided ingredients are insufficient."
-            # "If it does not need any additional ingredients, use an empty list for 'Additional_ingredient'."
+            "Also add relevant emojis to the instructions"
+            "remove or do not use  this format response with ### markers around important sections like ingredients, steps, and tips."
+            "For example: ###Ingredients###, ###Steps###, ###Tips###"
         )
 
         response = self.client.create_completion(
@@ -171,18 +172,34 @@ class IngredientAnalyzer:
             ])
 
         response_data = response.choices[0].message.content
-        return response_data
 
-        # response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
-        # if response_data:  # Ensure there's content to parse
-        #     response_data = json.loads(response_data)  # Parse the JSON string
-        # else:
-        #     raise ValueError("Received empty response data from the API.")
-        #
-        # food_suggestions = response_data.get("step-by-step-instructions", [])
-        # Additional_ingredient = response_data.get("Additional_ingredient", [])
-        #
-        # return Additional_ingredient, food_suggestions  # Return the parsed JSON object
+        # Format the response with proper HTML styling
+        formatted_response = response_data
+
+        # Replace ### markers with styled divs
+        formatted_response = formatted_response.replace("###Ingredients###", 
+            '<div class="section-title" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: white; padding: 10px 20px; border-radius: 10px; margin: 20px 0; font-weight: bold;">Ingredients</div>')
+        
+        formatted_response = formatted_response.replace("###Steps###", 
+            '<div class="section-title" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: white; padding: 10px 20px; border-radius: 10px; margin: 20px 0; font-weight: bold;">Steps</div>')
+        
+        formatted_response = formatted_response.replace("###Tips###", 
+            '<div class="section-title" style="background: linear-gradient(135deg, #FF6B6B, #FF8E53); color: white; padding: 10px 20px; border-radius: 10px; margin: 20px 0; font-weight: bold;">Tips</div>')
+
+        # Add line breaks and spacing
+        formatted_response = formatted_response.replace("\n", "<br>")
+        
+        # Style lists
+        formatted_response = formatted_response.replace("1.", '<div style="margin: 10px 0;"><strong>1.</strong>')
+        formatted_response = formatted_response.replace("2.", '<div style="margin: 10px 0;"><strong>2.</strong>')
+        formatted_response = formatted_response.replace("3.", '<div style="margin: 10px 0;"><strong>3.</strong>')
+        formatted_response = formatted_response.replace("4.", '<div style="margin: 10px 0;"><strong>4.</strong>')
+        formatted_response = formatted_response.replace("5.", '<div style="margin: 10px 0;"><strong>5.</strong>')
+
+        # Add container div with styling
+        formatted_response = f'<div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">{formatted_response}</div>'
+
+        return formatted_response
 
 
 # Check for the food and identify it
