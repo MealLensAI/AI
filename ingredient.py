@@ -155,11 +155,27 @@ class IngredientAnalyzer:
         print(user_choice)
 
         prompt = (
-             f"You are given a list of food ingredient:'{ingredient_list}'"
-            f"'step-by-step-instructions':give a step-by-step instructions to make: '{user_choice}'.\n"
-            "Also, suggest any additional ingredients needed to make this meal if the provided ingredients are insufficient."
-            "Please return the response in proper markdown formating so that it can be displayed in a web page well"
-            # "If it does not need any additional ingredients, use an empty list for 'Additional_ingredient'."
+          
+        f"""
+        You are a helpful chef assistant.
+
+        You are given a list of food ingredients: *{ingredient_list}*
+
+        Create a recipe for **{user_choice}**.
+
+        **Instructions**:
+        Give a clear, step-by-step guide using numbered steps. Start each step with a number like '1.', '2.', etc. Include relevant emojis to make the instructions fun and engaging.
+
+        **Ingredients**:
+        - First, list the provided ingredients.
+        - Then, suggest any *additional ingredients* that would enhance or complete the recipe if needed.
+
+        **Format your response using the following rules**:
+        - Use **double asterisks** for section titles like **Ingredients**, **Instructions**, etc.
+        - Use *single asterisks* for items in a list (e.g., ingredients).
+        - Start each instruction step with a number followed by a dot (e.g., 1.).
+        """
+
       )
 
         response = self.client.create_completion(
