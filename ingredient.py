@@ -155,12 +155,11 @@ class IngredientAnalyzer:
         print(user_choice)
 
         prompt = (
-            f"You are given a list of food ingredient:'{ingredient_list}'"
+             f"You are given a list of food ingredient:'{ingredient_list}'"
             f"'step-by-step-instructions':give a step-by-step instructions to make: '{user_choice}'.\n"
             "Also, suggest any additional ingredients needed to make this meal if the provided ingredients are insufficient."
-            "Also add relevant emojis to the instructions"
             # "If it does not need any additional ingredients, use an empty list for 'Additional_ingredient'."
-        )
+      )
 
         response = self.client.create_completion(
             model="gpt-4",  # Azure OpenAI model name
@@ -197,8 +196,7 @@ class Food_Analyzer:
         base64_image = ImageProcessor.encode_image(image_path)
         prompt = ("You are given an image of food . Tell me what food you are seeing,"
                   "list the ingredient that is used to make it."
-                  f"Based on the ingredient analysis, generate step-by-step instructions to make the food."
-                    "Also add relevant emojis to the instructions"
+                  f"Based on the ingredient analysis,, generate step-by-step instructions to make the food. "
 
                   )
         response = self.client.create_completion(
