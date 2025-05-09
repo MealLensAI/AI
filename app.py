@@ -1,10 +1,6 @@
-
-
 from typing import Tuple
 from flask import Flask, request, jsonify
-
 import google_search
-from  google_search import GoogleSearch
 from ingredient import OpenAIClient, IngredientAnalyzer,Food_Analyzer
 import os
 import tempfile
