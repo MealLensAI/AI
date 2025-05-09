@@ -70,3 +70,4 @@ youtube-search==2.1.2
 youtube-search-python==1.6.6
 dotenv
 duckduckgo_search
+fake_useragent
