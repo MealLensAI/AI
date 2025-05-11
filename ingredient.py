@@ -3,7 +3,9 @@ from openai import AzureOpenAI
 import os
 import json
 from dotenv import load_dotenv
+
 load_dotenv()
+
 
 class OpenAIClient:
     def __init__(self):
@@ -11,7 +13,7 @@ class OpenAIClient:
         api_version = "2024-02-15-preview"  # Use the latest API version
 
         self.client = AzureOpenAI(
-            api_key = os.getenv('API_KEY'),
+            api_key=os.getenv('API_KEY'),
             api_version=api_version,
             azure_endpoint=base_url
         )
@@ -46,6 +48,7 @@ class IngredientAnalyzer:
             "{\n"
             '  "ingredients": [list of detected ingredients],\n'
             '  "food_suggestions": [list of possible food dishes]\n'
+            '  "cooking_duration":[give me the time taken to cook each food]\n'
             "}\n"
             "\n"
             "If no ingredients are detected, return:\n"
@@ -53,7 +56,7 @@ class IngredientAnalyzer:
         )
 
         response = self.client.create_completion(
-            model="gpt-4-vision-preview",  # Azure OpenAI model name
+            model="gpt-4-vision-preview",
             messages=[
                 {
                     "role": "user",
@@ -70,55 +73,42 @@ class IngredientAnalyzer:
             ]
         )
 
-        # Parse the JSON response
         response_data = response.choices[0].message.content
 
-        # response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
-        # if response_data:  # Ensure there's content to parse
-        #     response_data = json.loads(response_data)  # Parse the JSON string
-        # else:
-        #     raise ValueError("Received empty response data from the API.")
-        #
-        # ingredients = response_data.get("ingredients", [])
-        # food_suggestions = response_data.get("food_suggestions", [])
-
         try:
-            # Ensure response_data is a string before processing
             if not isinstance(response_data, str):
                 raise ValueError("Response data is not a string.")
 
-            # Extract JSON block if it exists
             if "```json" in response_data:
                 try:
                     response_data = response_data.strip().split("```json", 1)[1].strip().rstrip("```")
                 except IndexError:
                     raise ValueError("Failed to extract JSON block from response.")
 
-            # Ensure we have valid content
             if not response_data.strip():
                 raise ValueError("Received empty response data from the API.")
 
-            # Parse the JSON string
             try:
                 response_data = json.loads(response_data)
             except json.JSONDecodeError as e:
                 raise ValueError(f"Invalid JSON format: {e}. Raw response: {repr(response_data)}")
 
-            # Extract ingredients and food suggestions
             ingredients = response_data.get("ingredients", [])
             food_suggestions = response_data.get("food_suggestions", [])
+            cooking_duration = response_data.get("cooking_duration", [])
 
         except Exception as e:
             print(f"Error processing API response: {e}")
-            response_data = {}  # Default to an empty dictionary if there's an error
+            response_data = {}
             ingredients = ['Retry.......']
             food_suggestions = ['Retry.....']
+            cooking_duration = []
 
-        # Store them as class variables for use elsewhere
         self.ingredients = ingredients
         self.food_suggestions = food_suggestions
+        self.cooking_duration = cooking_duration
 
-        return self.ingredients, self.food_suggestions  # Return the parsed JSON object
+        return self.ingredients, self.food_suggestions, self.cooking_duration
 
     def manual_prompt(self, user_input):
         ingredients = [ingredient.strip() for ingredient in user_input.split(',')]
@@ -126,11 +116,12 @@ class IngredientAnalyzer:
         prompt = (
             f"You are given a list of food ingredient:'{ingredients}'. Please respond in JSON format with the following keys:\n"
             "'food_suggestions': A list of food that can be made with the ingredient.\n"
+            "'cooking_duration': The time it takes to prepare the food.\n"
             "If you cannot see any ingredients, use an empty list for 'ingredients' and 'food_suggestions'."
         )
 
         response = self.client.create_completion(
-            model="gpt-4",  # Azure OpenAI model name
+            model="gpt-4",
             messages=[
                 {
                     "role": "user",
@@ -139,47 +130,45 @@ class IngredientAnalyzer:
             ])
 
         response_data = response.choices[0].message.content
-
         response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
-        if response_data:  # Ensure there's content to parse
-            response_data = json.loads(response_data)  # Parse the JSON string
+
+        if response_data:
+            response_data = json.loads(response_data)
         else:
             raise ValueError("Received empty response data from the API.")
 
         food_suggestions = response_data.get("food_suggestions", [])
+        cooking_duration = response_data.get("cooking_duration", [])
 
-        return ingredients, food_suggestions  # Return the parsed JSON object
+        return ingredients, food_suggestions, cooking_duration
 
     def get_cooking_instructions_and_ingredients(self, ingredient_list, user_choice):
-
-     
-
         prompt = (
-          
-        f"""
-        You are a helpful chef assistant.
+            f"""
+You are a helpful chef assistant.
 
-        You are given a list of food ingredients: *{ingredient_list}*
+You are given a list of food ingredients: *{ingredient_list}*
 
-        Create a recipe for **{user_choice}**.
+Create a recipe for **{user_choice}**.
 
-        **Instructions**:
-        Give a clear, step-by-step guide using numbered steps. Start each step with a number like '1.', '2.', etc. Include relevant emojis to make the instructions fun and engaging.
+Respond strictly in valid JSON format using this structure:
+{{
+  "ingredients_provided": [list of ingredients],
+  "additional_ingredients": [list of any extra ingredients needed],
+  "cooking_time": "Total cooking time in minutes or hours",
+  "cooking_instructions": [
+    "Step 1...",
+    "Step 2...",
+    ...
+  ]
+}}
 
-        **Ingredients**:
-        - First, list the provided ingredients.
-        - Then, suggest any *additional ingredients* that would enhance or complete the recipe if needed.
-
-        **Format your response using the following rules**:
-        - Use **double asterisks** for section titles like **Ingredients**, **Instructions**, etc.
-        - Use *single asterisks* for items in a list (e.g., ingredients).
-        - Start each instruction step with a number followed by a dot (e.g., 1.).
-        """
-
-      )
+Make the response easy to parse, use only double quotes, and avoid extra commentary outside the JSON.
+"""
+        )
 
         response = self.client.create_completion(
-            model="gpt-4",  # Azure OpenAI model name
+            model="gpt-4",
             messages=[
                 {
                     "role": "user",
@@ -188,21 +177,27 @@ class IngredientAnalyzer:
             ])
 
         response_data = response.choices[0].message.content
-        return response_data
 
-        # response_data = response_data.strip().split('```json')[1].strip().rstrip('```')
-        # if response_data:  # Ensure there's content to parse
-        #     response_data = json.loads(response_data)  # Parse the JSON string
-        # else:
-        #     raise ValueError("Received empty response data from the API.")
-        #
-        # food_suggestions = response_data.get("step-by-step-instructions", [])
-        # Additional_ingredient = response_data.get("Additional_ingredient", [])
-        #
-        # return Additional_ingredient, food_suggestions  # Return the parsed JSON object
+        try:
+            if "```json" in response_data:
+                response_data = response_data.split("```json")[1].split("```")[0].strip()
 
+            parsed_data = json.loads(response_data)
+            ingredients_provided = parsed_data.get("ingredients_provided", [])
+            additional_ingredients = parsed_data.get("additional_ingredients", [])
+            cooking_time = parsed_data.get("cooking_time", "")
+            cooking_instructions = parsed_data.get("cooking_instructions", [])
 
-# Check for the food and identify it
+            return {
+                "ingredients_provided": ingredients_provided,
+                "additional_ingredients": additional_ingredients,
+                "cooking_time": cooking_time,
+                "cooking_instructions": cooking_instructions
+            }
+
+        except Exception as e:
+            print(f"Error parsing cooking instructions JSON: {e}")
+            return {}
 
 
 class Food_Analyzer:
@@ -219,9 +214,10 @@ You are given an image of food. Tell me what food you are seeing.
 Then:
 
 **1.** Identify the food name clearly.  
-**2.** List the ingredients used to make it.  
+**2.** List the ingredients used to make it. 
+**3.** identify the time taken to cook the food. 
 Use *single asterisks* for each ingredient in the list.  
-**3.** Generate step-by-step cooking instructions based on the ingredients.  
+**4.** Generate step-by-step cooking instructions based on the ingredients.  
 Start each step with a number followed by a dot (e.g., 1., 2., etc.).  
 Add fun and relevant emojis to make it engaging.  
 
@@ -230,11 +226,10 @@ Add fun and relevant emojis to make it engaging.
 - Use *single asterisks* for ingredients or listed items.
 - Start each cooking step with a number and a dot (e.g., 1.).
 """
+        )
 
-
-                  )
         response = self.client.create_completion(
-            model="gpt-4-vision-preview",  # Azure OpenAI model name
+            model="gpt-4-vision-preview",
             messages=[
                 {
                     "role": "user",
@@ -256,10 +251,11 @@ Add fun and relevant emojis to make it engaging.
         initial_prompt_result = self.food_detect(image)
         prompt = (
             f"Extract just the name of the food being seen from this and return it to me and return it as a list separated by commas"
-            # f",if there is 'or' separate the different food and make them different "
-            f"{initial_prompt_result}.")
+            f"{initial_prompt_result}."
+        )
+
         response = self.client.create_completion(
-            model="gpt-4",  # Azure OpenAI model name
+            model="gpt-4",
             messages=[
                 {
                     "role": "user",
@@ -281,57 +277,20 @@ class InteractiveSession:
         else:
             ingredient_analysis = self.analyzer.manual_prompt(ingredients_input)
 
-        # print(ingredient_analysis)
         food_suggestions = self.analyzer.get_food_suggestions(ingredient_analysis)
         print(food_suggestions)
 
-        # print(food_suggestions[0])
-
         user_choice = int(input("Enter the food you want to make: "))
-        # print("You chose: ", user_choice)
-
-        cooking_instructions = self.analyzer.get_cooking_instructions_and_ingredients(ingredient_analysis,
-                                                                                      food_suggestions[user_choice])
+        cooking_instructions = self.analyzer.get_cooking_instructions_and_ingredients(
+            ingredient_analysis, food_suggestions[user_choice]
+        )
         print(cooking_instructions)
 
 
 if __name__ == '__main__':
-    # Azure OpenAI configuration
-
     client = OpenAIClient()
     model = IngredientAnalyzer(client)
 
-    session = model.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
-    # print(session)
-
-    inst = model.get_cooking_instructions_and_ingredients(session[0],'rice')
+    session = model.auto_detect('C:/Users/USER/Desktop/mealai/AI/okra-stew-ingredients-copy.jpg')
+    inst = model.get_cooking_instructions_and_ingredients(session[0], 'rice')
     print(inst)
-
-
-
-
-
-
-
-
-
-
-    # session1 = Food_Analyzer(client)
-    #
-    # result = session1.food_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
-    # print(result)
-
-    # food_detected = session1.get_food_suggestions('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img.jpg')
-    # print(food_detected)
-
-    # auto_mode = True  # Set this to True or False based on your requirement
-    # ingredients_input = None
-    #
-    # if not auto_mode:
-    #     ingredients_input = input("Enter ingredients separated by commas: ")
-    #
-    # session.run(auto_mode, ingredients_input)
-
-
-
-
