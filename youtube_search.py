@@ -170,4 +170,4 @@ if __name__ == "__main__":
     youtube_search = YouTubeSearch(youtube_api_key)
 
     # Run the main method of the YouTubeSearch class
-    print(youtube_search.main("math"))
+    print(youtube_search.main("how to make rice"))

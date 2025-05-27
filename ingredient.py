@@ -3,8 +3,9 @@ from openai import AzureOpenAI
 import os
 import json
 from dotenv import load_dotenv
-from get_user_location import get_location
+
 load_dotenv()
+
 
 class OpenAIClient:
     def __init__(self):
@@ -12,7 +13,7 @@ class OpenAIClient:
         api_version = "2024-02-15-preview"  # Use the latest API version
 
         self.client = AzureOpenAI(
-            api_key = os.getenv('API_KEY'),
+            api_key=os.getenv('API_KEY'),
             api_version=api_version,
             azure_endpoint=base_url
         )
@@ -53,7 +54,7 @@ class IngredientAnalyzer:
             '{\n  "ingredients": [],\n  "food_suggestions": []\n}'
         )
 
-        response = self.client.chat.completions.create(
+        response = self.client.create_completion(
             model="gpt-4-vision-preview",  # Azure OpenAI model name
             messages=[
                 {
@@ -153,11 +154,9 @@ class IngredientAnalyzer:
 
     def get_cooking_instructions_and_ingredients(self, ingredient_list, user_choice):
 
-     
-
         prompt = (
-          
-        f"""
+
+            f"""
         You are a helpful chef assistant.
 
         You are given a list of food ingredients: *{ingredient_list}*
@@ -177,7 +176,7 @@ class IngredientAnalyzer:
         - Start each instruction step with a number followed by a dot (e.g., 1.).
         """
 
-      )
+        )
 
         response = self.client.create_completion(
             model="gpt-4",  # Azure OpenAI model name
@@ -212,37 +211,14 @@ class Food_Analyzer:
 
     def food_detect(self, image_path):
         base64_image = ImageProcessor.encode_image(image_path)
-        
-        # Get user's location first
-        location_info = get_location()
-        location_context = ""
-        if location_info:
-            location_context = f"""
-Based on the user's location ({location_info['country']}, {location_info['region']}), 
-consider local variations and names of dishes. For example:
-- If in Kenya, consider dishes like rice pilau
-- If in Nigeria, consider dishes like jollof rice
-- If in Ghana, consider dishes like waakye
-- If in Tanzania, consider dishes like pilau
-- If in Uganda, consider dishes like matooke
-- If in South Africa, consider dishes like pap and chakalaka
-
-First, check if the food matches any local dishes from the user's region before suggesting global dishes.
-"""
-        
         prompt = (f"""
-You are an expert food analyst with deep knowledge of African and global cuisines.
+You are an expert food analyst.
 
-{location_context}
-
-You are given an image of food. Analyze it carefully considering:
-1. The user's location and local food variations
-2. Similar-looking dishes from other regions
-3. The specific characteristics that distinguish similar dishes
+You are given an image of food. Tell me what food you are seeing.
 
 Then:
 
-**1.** Identify the food name clearly, prioritizing local names if the dish matches a local variation.  
+**1.** Identify the food name clearly.  
 **2.** List the ingredients used to make it.  
 Use *single asterisks* for each ingredient in the list.  
 **3.** Generate step-by-step cooking instructions based on the ingredients.  
@@ -253,10 +229,8 @@ Add fun and relevant emojis to make it engaging.
 - Use **double asterisks** for section titles like **Food Name**, **Ingredients**, **Instructions**.
 - Use *single asterisks* for ingredients or listed items.
 - Start each cooking step with a number and a dot (e.g., 1.).
-- If you're unsure between similar dishes, mention the alternatives and explain why you chose the specific dish.
-
-**Important**: If you see a dish that could be one of several similar dishes (like rice pilau vs jollof rice), explain your reasoning and why you chose that specific identification.
 """
+
                   )
         response = self.client.create_completion(
             model="gpt-4-vision-preview",  # Azure OpenAI model name
@@ -329,17 +303,8 @@ if __name__ == '__main__':
     session = model.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
     # print(session)
 
-    inst = model.get_cooking_instructions_and_ingredients(session[0],'rice')
+    inst = model.get_cooking_instructions_and_ingredients(session[0], 'rice')
     print(inst)
-
-
-
-
-
-
-
-
-
 
     # session1 = Food_Analyzer(client)
     #
@@ -356,7 +321,6 @@ if __name__ == '__main__':
     #     ingredients_input = input("Enter ingredients separated by commas: ")
     #
     # session.run(auto_mode, ingredients_input)
-
 
 
 
