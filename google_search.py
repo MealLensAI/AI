@@ -56,7 +56,7 @@ class GoogleSearch:
             try:
                 # Add delay between requests
                 time.sleep(uniform(1, 2))
-                
+
                 response = self.session.get(url, timeout=10)
                 response.raise_for_status()
 
@@ -67,7 +67,7 @@ class GoogleSearch:
                     r'<meta property="og:title" content="(.*?)"',
                     r'<h1[^>]*>(.*?)</h1>'
                 ]
-                
+
                 for pattern in title_patterns:
                     title_match = re.search(pattern, response.text, re.IGNORECASE)
                     if title_match:
@@ -82,7 +82,7 @@ class GoogleSearch:
                     r'<meta property="og:description" content="(.*?)"',
                     r'<meta name="twitter:description" content="(.*?)"'
                 ]
-                
+
                 for pattern in desc_patterns:
                     desc_match = re.search(pattern, response.text, re.IGNORECASE)
                     if desc_match:
@@ -138,16 +138,16 @@ class GoogleSearch:
             results = []
             search_attempts = 0
             max_search_attempts = 5  # Increased number of search attempts
-            
+
             while search_attempts < max_search_attempts and len(results) < self.max_results:
                 try:
                     # Get more URLs than needed to account for invalid ones
                     urls = list(search(query, num_results=self.max_results * 2))
-                    
+
                     for url in urls:
                         if len(results) >= self.max_results:
                             break
-                            
+
                         if not self.is_valid_url(url):
                             continue
 
@@ -207,3 +207,5 @@ if __name__ == "__main__":
             print(f"   Link: {result['link']}")
     else:
         print("No results found or an error occurred.")
+
+

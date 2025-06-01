@@ -87,9 +87,6 @@ def process():
     # Step 3: Return food suggestions and wait for user choice
     return jsonify({"analysis_id": analysis_id, "response": result[0], "food_suggestions": food_suggestions})
 
-
-
-
 @app.route('/instructions', methods=['POST'])
 def instructions():
     # Step 4: Get user choice and generate instructions
@@ -107,18 +104,23 @@ def instructions():
 
     instructions = analyzer.get_cooking_instructions_and_ingredients(initial_prompt, user_choice)
 
+    os.remove(f"analysis_data/{json_file_name}")
+
+    return jsonify({"instructions": instructions})
+
+@app.route('/resources', methods=['POST'])
+def resources():
+    user_choice = request.form.get('food_choice_index')
+
+    if not user_choice:
+        return jsonify({"error": "user choice is required"}), 400
     user_choice = f"How to make {user_choice}"
-
-
     YT = youtube_search.YouTubeSearch(youtube_api_key)
     GS = google_search.GoogleSearch()
-
     YT = YT.main(user_choice)
     GS = GS.main(user_choice)
 
-    os.remove(f"analysis_data/{json_file_name}")
-
-    return jsonify({"instructions": instructions, "YoutubeSearch": YT,"GoogleSearch": GS})
+    return jsonify({"YoutubeSearch": YT,"GoogleSearch": GS})
 
 
 @app.route('/food_detect', methods=['POST'])
@@ -137,28 +139,32 @@ def food_detect():
             temp_file_path = temp_file.name
 
         result = food_analyzer.get_food_suggestions(temp_file_path)
+
         food_detected = result[1]
-        # print(food_detected)
-        YT_result = []
-        GS_result = []
-
-        inst = "How to make"
-        for i in food_detected:
-            print(i)
-
-            YT = youtube_search.YouTubeSearch(youtube_api_key)
-            GS = google_search.GoogleSearch()
-            YT = YT.main(f"How to make {i}",5)
-            GS = GS.main(f"How to make {i}")
-            YT_result.append(YT)
-            GS_result.append(GS)
+        return jsonify({"instructions": result[0],'food_detected':food_detected})
 
 
-        return jsonify({"instructions": result[0], "YoutubeSearch": YT_result, "GoogleSearch": GS_result})
+@app.route('/food_detect_resources', methods=['POST'])
+def food_detect_resources_route():
+    data = request.get_json()
+    food_detected = data.get('food_detected')
+    if not food_detected or not isinstance(food_detected, list):
+        return jsonify({"error": "food_detected list is required"}), 400
+
+    YT_result = []
+    GS_result = []
+    for i in food_detected:
+
+
+        YT = youtube_search.YouTubeSearch(youtube_api_key)
+        GS = google_search.GoogleSearch()
+        YT = YT.main(f"How to make {i}", 5)
+        GS = GS.main(f"How to make {i}")
+        YT_result.append(YT)
+        GS_result.append(GS)
+
+    return jsonify({"YoutubeSearch": YT_result, "GoogleSearch": GS_result})
 
 
 if __name__ == '__main__':
-    app.run(
-
-
-    )
+    app.run(debug=True)

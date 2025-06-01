@@ -300,19 +300,19 @@ if __name__ == '__main__':
     client = OpenAIClient()
     model = IngredientAnalyzer(client)
 
-    session = model.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
-    # print(session)
+    # session = model.auto_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
+    # # print(session)
+    #
+    # inst = model.get_cooking_instructions_and_ingredients(session[0], 'rice')
+    # print(inst)
 
-    inst = model.get_cooking_instructions_and_ingredients(session[0], 'rice')
-    print(inst)
-
-    # session1 = Food_Analyzer(client)
+    session1 = Food_Analyzer(client)
     #
     # result = session1.food_detect('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/okra-stew-ingredients-copy.jpg')
     # print(result)
 
-    # food_detected = session1.get_food_suggestions('/Users/danielsamuel/PycharmProjects/MealLensAI/AI/img.jpg')
-    # print(food_detected)
+    food_detected = session1.get_food_suggestions('easy-orange-chicken-500x500.webp')
+    print(food_detected)
 
     # auto_mode = True  # Set this to True or False based on your requirement
     # ingredients_input = None
