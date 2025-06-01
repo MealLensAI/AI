@@ -1,150 +1,208 @@
-# Google Search and YouTube Video Search with Python
+# Meallens AI Backend API Documentation
 
-This repository contains Python scripts for interacting with Google's APIs to perform two types of searches:
-1. **Google Search** – Retrieves top Google search results based on a user query.
-2. **YouTube Video Search** – Retrieves YouTube video links based on a user query.
+This document provides a detailed overview of the endpoints available in the Meallens AI backend Flask application (`app.py`). This API powers the frontend applications for ingredient analysis and food detection.
 
-Both scripts utilize the Google Custom Search API and the YouTube Data API to fetch results.
+## Getting Started
 
-## Requirements
+To run the application locally, ensure you have Python installed and the required libraries.
 
-To use these scripts, you need:
-- A Google Cloud Platform account.
-- API keys for the **Google Custom Search API** and **YouTube Data API**.
+1.  **Clone the repository (if applicable) or save the `app.py`, `ingredient.py`, `google_search.py`, `youtube_search.py` files.**
+2.  **Install dependencies:** You will likely need `Flask`, `requests`, and potentially other libraries depending on the `ingredient` and search modules. A `requirements.txt` is recommended.
+    ```bash
+    pip install Flask requests # Add other dependencies as needed
+    ```
+3.  **Set environment variables:** The application requires API keys for OpenAI, YouTube, and Google Custom Search.
+    ```bash
+    export API_KEY='your_openai_api_key'
+    export YOUTUBE_API_KEY='your_youtube_api_key' # Note: The code has a hardcoded key, consider using the environment variable instead.
+    export GOOGLE_SEARCH_API_KEY='your_google_search_api_key' # Note: The code has a hardcoded key, consider using the environment variable instead.
+    export CX='your_google_search_cx' # Note: The code has a hardcoded CX, consider using the environment variable instead.
+    ```
+4.  **Run the Flask application:**
+    ```bash
+    python app.py
+    ```
+    The application will run on `http://127.0.0.1:5000/` by default in debug mode.
 
-### Install Dependencies
-You'll need the following Python libraries:
-- `google-api-python-client`
-- `urllib.parse`
+## API Endpoints
 
-You can install them using `pip`:
+### 1. `/`
 
-pip install google-api-python-client
+*   **Method:** `GET`
+*   **Description:** A simple welcome endpoint to confirm the API is running.
+*   **Parameters:** None
+*   **Response:**
+    *   `200 OK`
+    *   `application/json`
+    ```json
+    {
+      "message": "Welcome to your Flask API with HTTPS!"
+    }
+    ```
 
+### 2. `/process`
 
-## Setup
+*   **Method:** `POST`
+*   **Description:** Processes either an ingredient image or a list of ingredients to detect ingredients and suggest food possibilities. This is typically used by the ingredient analysis part of the application.
+*   **Parameters:**
+    *   `image_or_ingredient_list`: String (`'image'` or `'ingredient_list'`) - Specifies whether the input is an image or a text list of ingredients. (Required)
+    *   If `image_or_ingredient_list` is `'image'`:
+        *   `image`: File - The image file containing ingredients. (Required)
+    *   If `image_or_ingredient_list` is `'ingredient_list'`:
+        *   `ingredient_list`: String - A text input listing the ingredients. (Required)
+*   **Response:**
+    *   `200 OK`
+    *   `application/json`
+    *   Returns an `analysis_id`, the AI's initial response (detected ingredients), and a list of food suggestions based on the ingredients.
+    ```json
+    {
+      "analysis_id": "unique_id_string",
+      "response": ["ingredient 1", "ingredient 2", ...],
+      "food_suggestions": ["Food Suggestion 1", "Food Suggestion 2", ...]
+    }
+    ```
+    *   `400 Bad Request`
+    *   `application/json`
+    *   Returns an error message if required parameters are missing or the `image_or_ingredient_list` value is invalid.
+    ```json
+    {
+      "error": "Error message"
+    }
+    ```
 
-1. **Get Your API Keys**:
-    - [Google Custom Search API](https://developers.google.com/custom-search/v1/overview) – For Google search results.
-    - [YouTube Data API v3](https://developers.google.com/youtube/v3/getting-started) – For YouTube video results.
-    
-2. **Set Your API Keys**:
-    - Replace the `API_KEY` and `CX` (Custom Search Engine ID) in both scripts with your own credentials.
+### 3. `/instructions`
 
----
+*   **Method:** `POST`
+*   **Description:** Generates cooking instructions for a specific food suggestion based on a previous `/process` analysis. This is used by the ingredient analysis part after the user selects a food suggestion.
+*   **Parameters:**
+    *   `food_choice_index`: String - The food suggestion chosen by the user (e.g., "Orange Chicken"). (Required)
+    *   `food_analysis_id`: String - The `analysis_id` received from the `/process` endpoint. (Required)
+*   **Response:**
+    *   `200 OK`
+    *   `application/json`
+    *   Returns the cooking instructions for the chosen food.
+    ```json
+    {
+      "instructions": "Step 1: ...\nStep 2: ..."
+    }
+    ```
+    *   `400 Bad Request`
+    *   `application/json`
+    *   Returns an error message if `food_choice_index` or `food_analysis_id` are missing or if the `analysis_id` is not found (e.g., file expired).
+    ```json
+    {
+      "error": "Error message"
+    }
+    ```
 
-## Scripts
+### 4. `/resources`
 
-### 1. Google Search Results
+*   **Method:** `POST`
+*   **Description:** Fetches YouTube video tutorials and Google search results for a single food item. This is primarily used by the ingredient analysis part after instructions are generated.
+*   **Parameters:**
+    *   `food_choice_index`: String - The food item to search resources for (e.g., "Orange Chicken"). (Required)
+*   **Response:**
+    *   `200 OK`
+    *   `application/json`
+    *   Returns lists of YouTube and Google search results.
+    ```json
+    {
+      "YoutubeSearch": [
+        {"title": "Video Title 1", "link": "Video URL 1"},
+        ...
+      ],
+      "GoogleSearch": [
+        {"title": "Article Title 1", "description": "Snippet 1", "link": "Article URL 1"},
+        ...
+      ]
+    }
+    ```
+    *   `400 Bad Request`
+    *   `application/json`
+    *   Returns an error message if `user_choice` is missing.
+    ```json
+    {
+      "error": "user choice is required"
+    }
+    ```
 
-This script allows you to get the top Google search results for a query.
+### 5. `/food_detect`
 
-#### How It Works:
+*   **Method:** `POST`
+*   **Description:** Processes an image to detect food items and generate cooking instructions for one of the detected foods. This is the initial endpoint for the food detection part of the application.
+*   **Parameters:**
+    *   `image`: File - The image file containing the food. (Required)
+*   **Response:**
+    *   `200 OK`
+    *   `application/json`
+    *   Returns cooking instructions (likely for the main detected food) and an array of all detected food names.
+    ```json
+    {
+      "instructions": "Instructions text...",
+      "food_detected": ["Detected Food 1", "Detected Food 2", ...]
+    }
+    ```
+    *   `400 Bad Request`
+    *   `application/json`
+    *   Returns an error message if the image file is missing.
+    ```json
+    {
+      "error": "Error message"
+    }
+    ```
 
-- **`GoogleSearch` class**: Initializes with the API key and Custom Search Engine ID, and contains methods to perform searches and display results.
-- **`get_search_results()`**: Searches Google for the given query and retrieves the top results.
-- **`main()`**: Prompts the user for a search query and displays the results.
+### 6. `/food_detect_resources`
 
-#### Example Usage:
+*   **Method:** `POST`
+*   **Description:** Fetches YouTube video tutorials and Google search results for a list of food items. This endpoint is specifically designed to be called after the `/food_detect` endpoint to get resources for all detected foods.
+*   **Parameters:**
+    *   `food_detected`: JSON Array of Strings - An array containing the names of the detected food items (typically the `food_detected` array from the `/food_detect` response). (Required)
+*   **Request Body Example:**
+    ```json
+    {
+      "food_detected": ["Orange Chicken", "Pounded Yam"]
+    }
+    ```
+*   **Response:**
+    *   `200 OK`
+    *   `application/json`
+    *   Returns nested lists of YouTube and Google search results, where each inner list corresponds to a food item in the `food_detected` input array. The order of results in the inner lists corresponds to the order of foods in the input array.
+    ```json
+    {
+      "YoutubeSearch": [
+        [{"title": "Video Title for Food 1", "link": "Video URL 1"}, ...], // Resources for food_detected[0]
+        [{"title": "Video Title for Food 2", "link": "Video URL 2"}, ...], // Resources for food_detected[1]
+        ...
+      ],
+      "GoogleSearch": [
+        [{"title": "Article Title for Food 1", "description": "Snippet 1", "link": "Article URL 1"}, ...], // Resources for food_detected[0]
+        [{"title": "Article Title for Food 2", "description": "Snippet 2", "link": "Article URL 2"}, ...], // Resources for food_detected[1]
+        ...
+      ]
+    }
+    ```
+    *   `400 Bad Request`
+    *   `application/json`
+    *   Returns an error message if the `food_detected` list is missing or not in the correct format.
+    ```json
+    {
+      "error": "food_detected list is required"
+    }
+    ```
 
-python google_search.py
+## Workflow Examples
 
-You will be prompted to input a search term, and the script will return the top Google search results.
+*   **Ingredient Analysis:**
+    1.  User provides image or ingredient list to `/process`.
+    2.  Frontend displays detected ingredients and food suggestions from the `/process` response.
+    3.  User selects a food suggestion.
+    4.  Frontend calls `/instructions` with the chosen suggestion and `analysis_id` to get cooking instructions.
+    5.  Frontend calls `/resources` with the chosen suggestion to get YouTube and Google resources for that specific food.
 
----
+*   **Food Detection:**
+    1.  User provides an image to `/food_detect`.
+    2.  Frontend displays the instructions and notes the `food_detected` array from the `/food_detect` response.
+    3.  Frontend calls `/food_detect_resources` with the `food_detected` array.
+    4.  Frontend displays the aggregated YouTube and Google resources from the `/food_detect_resources` response.
 
-### 2. YouTube Video Search
-
-This script fetches YouTube video links based on a search query.
-
-#### How It Works:
-
-- **`YouTubeSearch` class**: Initializes with the API key and allows searching YouTube for video links.
-- **`get_video_links()`**: Searches YouTube for the given query and retrieves video links.
-- **`main()`**: Prompts the user for a search query and displays the video links.
-
-#### Example Usage:
-```bash
-python youtube_search.py
-```
-You will be prompted to input a search term, and the script will return the YouTube video links.
-
----
-
-## Example Code for Google Search
-
-```python
-from googleapiclient.discovery import build
-
-class GoogleSearch:
-    def __init__(self, api_key, cx, max_results=5):
-        self.api_key = api_key
-        self.cx = cx
-        self.max_results = max_results
-
-    def get_search_results(self, search_query):
-        try:
-            service = build('customsearch', 'v1', developerKey=self.api_key)
-            search_response = service.cse().list(
-                q=search_query,
-                cx=self.cx,
-                num=self.max_results,
-                filter='0',  
-                safe='high',
-            ).execute()
-
-            results = []
-            for item in search_response.get('items', []):
-                title = item.get('title', 'No Title')
-                link = item.get('link', 'No Link')
-                snippet = item.get('snippet', 'No Description')
-                results.append({
-                    'title': title,
-                    'link': link,
-                    'description': snippet
-                })
-            return results
-
-        except Exception as e:
-            print(f"An error occurred: {str(e)}")
-            return []
-
-    def main(self):
-        search_term = input("Enter what you want to search for: ")
-        results = self.get_search_results(search_term)
-
-        if results:
-            print("\nHere are your Google search results:")
-            for i, result in enumerate(results, 1):
-                print(f"\n{i}. {result['title']}")
-                print(f"   Link: {result['link']}")
-                print(f"   Description: {result['description']}")
-        else:
-            print("No results found or an error occurred.")
-```
-
----
-
-## Contribution
-
-Feel free to fork this repository, make changes, and submit pull requests. Any improvements or bug fixes are welcome!
-
----
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## Support
-
-For issues or questions, please open an issue on the GitHub repository.
-
----
-
-## Acknowledgments
-
-- Google for providing powerful APIs like the Custom Search API and YouTube Data API.
-- Python community for the `google-api-python-client` library, which makes API integration straightforward.
-```
+This documentation should provide a clear guide for anyone looking to understand or use your backend API. Let me know if you need any adjustments or further details!
